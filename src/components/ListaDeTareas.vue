@@ -3,7 +3,7 @@
     <h2>Lista de Tareas</h2>
     <input type="text" v-model="nuevaTarea" @keyup.enter="addTarea">
     <button class="boton-agregar" @click="addTarea">Agregar</button>
-    
+    <!-- <button class="boton-listar" @click="showTareasInList">Ver todas las tareas en una tabla</button> -->
     <ul>
         <li v-for="(tarea, index) in tareas" :key="index">
             {{ tarea }}
@@ -33,6 +33,14 @@ const updateTarea = (index) => {
         tareas.value[index] = nuevaTarea.trim();
     }
 }
+/*const showTareasInList = () => {
+    const pregunta = prompt('¿Queres ver todo?')
+    if (tareas.value !== null){
+
+    }else{
+
+    }
+}*/
 </script>
 
 <style scoped>

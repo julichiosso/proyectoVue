@@ -21,7 +21,8 @@ const router = createRouter({
 
       component: () => import('../components/ListaDeTareas.vue'),
      }
+    
   ],
 })
-
+ 
 export default router
