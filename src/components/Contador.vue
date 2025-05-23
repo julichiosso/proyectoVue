@@ -15,6 +15,7 @@ const incrementar = () => {
 const decrementar = () => {
   contador.value--;
 }
+
 </script>
 
 

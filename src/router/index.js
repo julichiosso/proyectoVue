@@ -20,7 +20,7 @@ const router = createRouter({
       name: 'lista-de-tareas',
 
       component: () => import('../components/ListaDeTareas.vue'),
-    },
+     }
   ],
 })
 
