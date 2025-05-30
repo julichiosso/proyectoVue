@@ -1,9 +1,13 @@
 
 <template>
-  <h1>Hola Mundo</h1>
-  <p>{{ contador }}</p> 
+  <div class="inc">
+    <h1>Hola Mundo</h1>
+    <p>{{ contador }}</p> 
   <button @click="incrementar">Incrementar</button>
   <button @click="decrementar">Decrementar</button>
+  </div>
+  
+  
 </template>
   
 <script setup>
@@ -20,6 +24,9 @@ const decrementar = () => {
 
 
 <style scoped>
+.inc {
+  margin-top: 160px;
+}
 p{
   color:red;
 }

@@ -49,6 +49,7 @@ const updateTarea = (index) => {
     width: 30%;
     border-radius: 5px 30px 2px 2px;
     padding: 15px;
+    margin-top: 160px;
 }
 
 .lista-tareas h2 {
