@@ -4,7 +4,7 @@ import { ref } from "vue";
 import { getTemperaturas } from "../helpers/getWeather";
 
 export const useWeatherStore = defineStore("weather", () => {
-  const temperaturas = ref([]); // Cambiar de "temperatura" a "temperaturas"
+  const temperaturas = ref([]); 
 
   const setTemperaturas = (nuevasTemps) => {
     temperaturas.value = nuevasTemps;

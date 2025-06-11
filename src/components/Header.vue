@@ -1,13 +1,8 @@
 <template>
-    <div class="header">
-        
-        <h3><Weather></Weather></h3>
-    </div>
-    
+ 
 </template>
 
 <script setup>
-import  Weather  from '../components/Weather.vue';  
 </script>
 
 <style scoped>

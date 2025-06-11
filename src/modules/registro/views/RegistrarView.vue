@@ -1,105 +1,135 @@
 <template>
-    <body>
+  <div class="layout">
+    <SideBar />
 
-    
-    <div class="principal">
-        <div class="titulo">
-            <h2>Registrate<br>
-                <span class="aca">acá!</span></h2>
+    <main class="main-content">
+      <h1>Registrar Cliente</h1>
+      <form class="form" @submit.prevent="registrarCliente">
+        <div class="form-group">
+          <label for="nombre">Nombre</label>
+          <input type="text" id="nombre" v-model="cliente.nombre" required />
         </div>
-        
-        <Form :validation-schema="schema" @submit="onSubmit">
-            <div class="form">
-                <label for="nombre">Nombre:</label>
-                <Field type="text" name="nombre" id="nombre" placeholder="Ingrese su nombre" />
-                <ErrorMessage name="nombre"></ErrorMessage>
-            </div>
-            <div class="form">
-                <label for="correo">Correo:</label>
-                <Field type="email" name="email" id="correo" placeholder="Ingrese su email" />
-                <ErrorMessage name="email"></ErrorMessage>
-            </div>
-            <div class="form">
-                <button type="submit">Registrar</button>
-            </div>
-        </Form>
-    </div>
 
-    </body>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" v-model="cliente.email" required />
+        </div>
+
+        <button type="submit" @click="limpiarCargado">Registrar</button> <br>
+        
+            <p class="msjCargado">Cliente registrado exitosamente ✔️ <span><a href="https://criptoya.com/" target="_blank" class="compraLink">Comprar</a></span></p>
+            
+      
+        
+      </form>
+
+     
+    </main>
+  </div>
 </template>
 
 <script setup>
-import { Form, Field, ErrorMessage} from 'vee-validate';
-import {schema} from '../schemas/validationSchema';
+import { reactive } from 'vue'
+import SideBar from '@/components/SideBar.vue'
 
-const onSubmit = () => {
-    console.log('Se envio el formulario');
+const cliente = reactive({
+  nombre: '',
+  email: ''
+})
+
+function registrarCliente() {
+  console.log('Cliente registrado:', cliente)
 }
+
 </script>
 
 <style scoped>
+.layout {
+  display: flex;
+  min-height: 100vh;
+  font-family: 'Proxima Nova', sans-serif;
+  background-color: #f5f7fa;
+}
 
-body {
-    
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif ;
+.main-content {
+  flex: 1;
+  padding: 2rem;
 }
-.aca {
-    padding-right: 80px;
 
+h1 {
+  margin-bottom: 2rem;
+  color: #1f2937;
 }
-.titulo {
-    box-shadow: 3px 5px gray;
-    border-radius: 10px 15px 50px;
-    width: 60%;
-    background-color: rgb(22, 132, 223);
-    
-}
-input {
-    margin-left: 10px;
-    margin-right: 10px;
-    border: 1px solid rgb(22, 22, 22);
-    padding: 10px;
-    border-radius: 12px;
-}
-label {
-    color: #2c3e50;
-    font-weight: 500;
-    margin: 10px;
-    font-size: 20px;
-}
-h2 {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    text-align: center;
-    font-size: 30px;
-}
-.principal {
-   
-    justify-content: center;
-    background-color: #F4F6F9;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-    padding: 20px 30px;
-    border-radius: 15px;
-    border: 2px solid rgb(9, 64, 109);    
-    margin-left: 70%;
-    margin-top: 160px;
-}
+
 .form {
-    
-    margin-bottom: 10px;
+  background-color: white;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  max-width: 500px;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+input {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+}
+
+input:focus {
+  border-color: #2563eb;
+  outline: none;
 }
 
 button {
-  padding: 8px 16px;
-  border-radius: 8px;
-}
-
-button {
-  transition: background-color 0.3s ease;
-}
-button:hover {
-  background-color: #0056b3;
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #2563eb;
   color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
 }
 
+button:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    background-color: #1e40af;
+    transition: 0.8s;
+    transform: translateY(-3px);
+}
 
+.msjCargado {
+    color: #343a40;
+    top: 40px;
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #343a40;
+}
+.compraLink {
+    text-decoration: none;
+    font-size: 18px;
+    color: #5682ad;
+    margin-left: 30%;
+}
+
+select, option {
+  color: black;
+}
+a:hover {
+    transition: 1s;
+    transform: translateY(15px);
+}
 </style>

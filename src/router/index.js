@@ -10,16 +10,16 @@ const router = createRouter({
        component: HomeView,
      },*/
      {
-       path: '/contador',
-       name: 'contador',
+       path: '/Historial',
+       name: 'Historial',
 
-       component: () => import('../modules/contador/components/Contador.vue'),
+       component: () => import('../modules/contador/components/Historial.vue'),
      },
      {
       path: '/lista-de-tareas',
       name: 'lista-de-tareas',
 
-      component: () => import('../modules/listaDeTareas/components/ListaDeTareas.vue'),
+      component: () => import('../modules/listaDeTareas/components/AltaCompra.vue'),
      },
      {
       path: '/registrar',

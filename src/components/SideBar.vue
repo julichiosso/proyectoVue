@@ -1,54 +1,98 @@
 <template>
-<div class="sidebar">
-    <h2>Menu</h2>
-    <ul>
-        <li><router-link to="/contador">Contador</router-link></li>
-        <li><router-link to="/lista-de-tareas">Lista de tareas</router-link></li>
-        <li><router-link to="/registrar">Registrar</router-link></li>
-        
-    </ul>
-</div>
+  <aside class="sidebar">
+    <div class="logo-container">
+      <img src="../font/png/guyi9.jpg" alt="Crypto Coin Logo" />
+      <h1 class="brand">Crypto Coin</h1>
+    </div>
+
+    <nav>
+      <h2 class="menu-title">Menú</h2>
+      <ul class="menu-list">
+        <li><router-link to="/lista-de-tareas"><span>🪙</span> Comprar</router-link></li>
+        <li><router-link to="/Historial"><span>📜</span>Historial de movimientos</router-link></li>
+       
+      </ul>
+    </nav>
+  </aside>
 </template>
 
 <script setup>
-
+// Nada por ahora
 </script>
 
-<style>
+<style scoped>
 .sidebar {
-    margin-top: 160px;
-    width: 220px;
-    background-color: #1E2A38; /* gris azulado moderno */
-    padding: 20px 16px;
-    border-radius: 16px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-    font-family: 'Segoe UI', sans-serif;
-    color: #ffffff;
-    transition: all 0.3s ease;
+  width: 240px;
+  height: 100vh;
+  background-color: #0c111f;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #ffffff;
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.3);
 }
 
-.sidebar:hover {
-    border-radius: 22px;
-    background-color: #253449; /* un poco más claro al hacer hover */
+.logo-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 32px;
 }
 
-.sidebar h2 {
-    font-size: 20px;
-    font-weight: bold;
-    margin-bottom: 20px;
+.logo-container img {
+  width: 100px;
+  height: 100px;
+  border-radius: 20%;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 6px rgba(255, 255, 255, 0.1);
 }
 
-.sidebar a {
-    display: block;
-    color: #ffffff;
-    text-decoration: none;
-    padding: 10px 12px;
-    border-radius: 10px;
-    margin-bottom: 8px;
-    transition: background-color 0.2s ease;
+.brand {
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
 }
 
-.sidebar a:hover {
-    background-color: #1976D2; /* azul vibrante al pasar el mouse */
+.menu-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  text-align: left;
+  width: 100%;
+  color: #7fc4ff;
+}
+
+.menu-list {
+  list-style: none;
+  padding: 0;
+  width: 100%;
+}
+
+.menu-list li {
+  margin-bottom: 10px;
+}
+
+.menu-list a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #ffffff;
+  text-decoration: none;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.menu-list a:hover {
+  background-color: #1c273c;
+  color: #7fc4ff;
+}
+
+.menu-list a.router-link-exact-active {
+  background-color: #0052cc;
+  color: white;
+  font-weight: bold;
 }
 </style>
