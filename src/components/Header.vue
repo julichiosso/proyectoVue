@@ -1,5 +1,6 @@
 <template>
     <div class="header">
+        
         <h3><Weather></Weather></h3>
     </div>
     
@@ -10,6 +11,7 @@ import  Weather  from '../components/Weather.vue';
 </script>
 
 <style scoped>
+
 .header {
     display: flex;
     justify-content: center;
@@ -19,7 +21,7 @@ import  Weather  from '../components/Weather.vue';
     top: 0;
     right: 0;
     left: 0;
-    background-color: #333;
+    background-color: #eeeeee;
     color: white;
 }
 

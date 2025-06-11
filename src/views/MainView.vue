@@ -1,4 +1,6 @@
 <template>
+<body>
+    
 
 <div class="container">
     <Header></Header>
@@ -8,6 +10,7 @@
     </div>
 
 </div>
+</body>
 </template>
 
 <script setup>
@@ -16,6 +19,10 @@ import Header from '../components/Header.vue';
 </script>
 
 <style>
+body { 
+    background-color: #0F3D57;
+    color: #ECEFF1;
+}
 .container {
     display: flex;
 }
