@@ -8,9 +8,9 @@
     <nav>
       <h2 class="menu-title">Menú</h2>
       <ul class="menu-list">
+        <li><router-link to="/registro"><span>👤</span>Clientes</router-link></li>
         <li><router-link to="/lista-de-tareas"><span>🪙</span> Comprar</router-link></li>
         <li><router-link to="/Historial"><span>📜</span>Historial de movimientos</router-link></li>
-       
       </ul>
     </nav>
   </aside>
@@ -23,8 +23,9 @@
 <style scoped>
 .sidebar {
   width: 240px;
-  height: 100vh;
-  background-color: #0c111f;
+  height: 200vh;
+  background: linear-gradient(135deg, #0a0f1c, #1e3c72);
+
   padding: 24px 16px;
   display: flex;
   flex-direction: column;

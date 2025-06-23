@@ -75,7 +75,7 @@ const datosformulario = ref({
 const criptosDisponibles = ['bitcoin', 'ethereum', 'usdc', 'bnb']
 
 
-const preciosCryptos = async (cripto) => {
+const preciosCryptos = async () => {
   try {
     const url = `https://criptoya.com/api/bybit/BTC/ARS/0.1`
     const respuesta = await axios.get(url)
@@ -185,7 +185,8 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .purchase-container {
-  background: #0f172a;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #0a0f1c, #1e3c72);
   min-height: 100vh;
   padding: 2rem;
   display: flex;
@@ -311,4 +312,6 @@ button:hover {
   
   color: #141414;
 }
+
+
 </style>
