@@ -57,6 +57,7 @@
 </template>
 
 <script setup>
+// logica main registrar.vue
 import { reactive, ref, onMounted } from 'vue'
   
 import axios from 'axios'
