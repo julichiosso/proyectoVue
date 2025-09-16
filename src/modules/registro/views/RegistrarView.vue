@@ -46,7 +46,8 @@
 
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
+  
 import axios from 'axios'
 
 const mensaje = ref('')
