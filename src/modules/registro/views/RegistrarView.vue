@@ -46,7 +46,7 @@
 
 
 <script setup>
-import { reactive, ref, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
   
 import axios from 'axios'
 
