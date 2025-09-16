@@ -1,4 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import Historial from '../modules/contador/components/Historial.vue'
+import Dashboard from '../modules/dashboard/views/Dashboard.vue'
+import ListaDeTareas from '../modules/listaDeTareas/components/AltaCompra.vue'
+import Registro from '../modules/registro/views/RegistrarView.vue'
+import Admin from '../modules/adm/components/views/AdminView.vue'
 
 
 const router = createRouter({
@@ -10,22 +15,35 @@ const router = createRouter({
        component: HomeView,
      },*/
      {
-       path: '/Historial',
-       name: 'Historial',
+      path: '/dashboard',
+      name: 'dashboard',
 
-       component: () => import('../modules/contador/components/Historial.vue'),
+      component: Dashboard
+
+     },
+     {
+       path: '/historial',
+       name: 'historial',
+
+       component: Historial
      },
      {
       path: '/lista-de-tareas',
       name: 'lista-de-tareas',
 
-      component: () => import('../modules/listaDeTareas/components/AltaCompra.vue'),
+      component: ListaDeTareas,
      },
      {
       path: '/registro',
       name: 'registro',
 
-      component: () => import('../modules/registro/views/RegistrarView.vue'),
+      component: Registro
+     },
+     {
+      path: '/administration',
+      name: 'administration',
+
+      component: Admin
      }
   ],
 })

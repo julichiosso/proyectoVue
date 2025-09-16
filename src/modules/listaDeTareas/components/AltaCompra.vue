@@ -1,317 +1,292 @@
 <template>
-  <div class="purchase-container">
-    <div class="card">
-      <div class="card-header">
-        <h2>Comprar Criptomoneda</h2>
+  <div class="new-trade-container">
+    <!-- Título -->
+    <h1 class="page-title">New Trade</h1>
+    <p class="subtitle">Log a new crypto purchase or sale for a client.</p>
+  
+    <div class="content-wrapper">
+      <!-- Trade Details -->
+      <div class="card trade-details">
+        <h2 class="section-title">Trade Details</h2>
+        <p class="section-subtitle">Enter the information for the new trade.</p>
+        
+        <div class="form-grid">
+          <!-- Transaction Type -->
+          <div class="form-group">
+            <label>Transaction Type</label>
+            <select v-model="datosformulario.action" class="input">
+              <option value="purchase">Purchase</option>
+              <option value="sale">Sale</option>
+            </select>
+          </div>
+
+          <!-- Date -->
+          <div class="form-group">
+            <label>Date of Transaction</label>
+            <input type="datetime-local" v-model="datosformulario.date" class="input" />
+          </div>
+
+          <!-- Client -->
+          <div class="form-group full-width">
+            <label>Client</label>
+            <select v-model="datosformulario.clientId" class="input">
+              <option v-for="client in clients" :key="client.Id" :value="client.Id">
+                {{ client.nombre }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Cryptocurrency -->
+          <div class="form-group">
+            <label>Cryptocurrency</label>
+            <select v-model="datosformulario.cryptoCode" class="input">
+              <option value="bitcoin">Bitcoin</option>
+              <option value="ethereum">Ethereum</option>
+              <option value="usdc">USDC</option>
+            </select>
+          </div>
+
+          <!-- Amount -->
+          <div class="form-group">
+            <label>Amount</label>
+            <input 
+              type="number" 
+              v-model.number="datosformulario.cryptoAmount" 
+              step="0.00000001" 
+              min="0.00000001"
+              class="input"
+            />
+          </div>
+        </div>
+        
+
+        <!-- Botón, tener cuidado con el margin-top-->
+        <button class="btn-primary" @click="registro" :disabled="loading">
+          {{ loading ? "Saving..." : "Log Transaction" }}
+        </button>
+
+        <p v-if="mensaje" style="color: green; margin-top:10px">{{ mensaje }}</p>
+        <p v-if="error" style="color: red; margin-top:10px">{{ error }}</p>
       </div>
 
-      <div class="form-group">
-        <label for="ClienteId">Cliente</label>
-        <input type="number" v-model="datosformulario.ClienteId" required placeholder="ID de Cliente" />
+      <!-- AI Trade Recommendation (mock) -->
+      <div class="card recommendation">
+        <h2 class="section-title">AI Trade Recommendation</h2>
+        <p class="section-subtitle">
+          Get an AI-powered recommendation based on the client's risk profile.
+        </p>
+        <p class="risk-value">Risk Score: 50</p>
+        <div class="risk-score">
+          <span style="color: #16A34A;">Low</span>
+          <input type="range" min="0" max="100" value="50" class="slider" />
+          <span style="color: #DC2626;">High</span>
+        </div>
+        <button class="btn-primary">Get Recommendation</button>
       </div>
-
-      <div class="form-group">
-        <label for="crypto">Criptomoneda</label>
-        <select v-model="datosformulario.cryptoCode" id="crypto">
-          <option disabled value="">Elegí una criptomoneda</option>
-          <option v-for="crypto in criptosDisponibles" :key="crypto" :value="crypto">{{ crypto.toUpperCase() }}</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="cryptoCode">Crypto code:</label>
-        <input type="text" v-model="datosformulario.cryptoCode" placeholder="Ingrese el código de la cripto" required />
-      </div>
-
-      <div class="form-group">
-        <label for="accion">Acción:</label>
-        <select v-model="datosformulario.accion" id="accion" required>
-          <option disabled value="">¿Qué acción va a realizar?</option>
-          <option value="purchase">Compra</option>
-          <option value="sale">Venta</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="amount">Cantidad</label>
-        <input type="number" :value="datosformulario.cantidad.toFixed(8)" @input="e => datosformulario.cantidad = parseFloat(e.target.value)" step="0.00000001" min="0.00000001" placeholder="Ej: 0.00000001" />
-      </div>
-
-      <div class="form-group">
-        <label for="amount">Monto (ARS)</label>
-        <input type="text" :value="datosformulario.monto.toLocaleString('es-AR')" readonly placeholder="Precio en pesos" />
-        <input type="hidden" v-model="datosformulario.monto" />
-      </div>
-
-      <div class="form-group">
-        <label for="datetime">Fecha y hora: {{ fechaHoraActual }}</label>
-      </div>
-
-      <button @click="registro">Confirmar Compra</button>
-      <p v-if="loading" class="loading-mensaje">Cargando...</p>
-      <div v-if="mensaje" class="mensaje-exitoso">{{ mensaje }}</div>
-      <div v-if="error" class="mensaje-error">{{ error }}</div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
 import axios from 'axios'
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 
 const mensaje = ref('')
 const error = ref('')
 const loading = ref(false)
+const clients = ref([])
 
-const datosformulario = ref({
-  cryptoCode: '',
-  accion: 'purchase',
-  ClienteId: 1,
-  cantidad: 0.00000001,
-  monto: 0,
-  fechayhora: ''
+onMounted(async () => {
+  try {
+    const response = await axios.get("http://localhost:5272/api/Cliente")
+    clients.value = response.data
+  } catch (err) {
+    console.error("Error al cargar clientes", err)
+    error.value = "Error loading clients"
+  }
 })
 
-const criptosDisponibles = ['bitcoin', 'ethereum', 'usdc', 'bnb']
-
-
-const preciosCryptos = async () => {
-  try {
-    const url = `https://criptoya.com/api/bybit/BTC/ARS/0.1`
-    const respuesta = await axios.get(url)
-    return respuesta.data.ask
-  } catch (err) {
-    console.error('Error al obtener precio de cripto:', err)
-    throw new Error('No se pudo obtener el precio de la cripto')
-  }
-}
-
-const calcularMonto = async () => {
-  const cripto = datosformulario.value.cryptoCode
-  const cantidad = datosformulario.value.cantidad
-
-  if (!cripto || cantidad <= 0) {
-    datosformulario.value.monto = 0
-    return
-  }
-
-  try {
-    const precio = await preciosCryptos(cripto)
-    const montoTotal = cantidad * precio
-    datosformulario.value.monto = parseFloat(montoTotal.toFixed(2))
-  } catch (err) {
-    error.value = 'No se pudo calcular el monto'
-    datosformulario.value.monto = 0
-  }
-}
-
-
-watch(() => [datosformulario.value.cryptoCode, datosformulario.value.cantidad], calcularMonto)
+const datosformulario = ref({
+  cryptoCode: "bitcoin",
+  action: "purchase",
+  clientId: null,
+  cryptoAmount: 0.00000001,
+  date: new Date().toISOString().slice(0, 16)
+})
 
 const registro = async () => {
   mensaje.value = ''
   error.value = ''
 
-  if (!datosformulario.value.cryptoCode || !datosformulario.value.cantidad) {
-    error.value = 'Complete los campos obligatorios'
-    return
-  }
-
-  if (datosformulario.value.cantidad <= 0) {
-    error.value = 'La cantidad debe ser mayor a 0'
+  if (!datosformulario.value.cryptoCode || 
+      !datosformulario.value.clientId || 
+      datosformulario.value.cryptoAmount <= 0) {
+    error.value = 'Complete all fields correctly'
     return
   }
 
   try {
     loading.value = true
-    await calcularMonto()
-
-    const compra = {
-      cryptoCode: datosformulario.value.cryptoCode,
-      accion: datosformulario.value.accion,
-      ClienteId: datosformulario.value.ClienteId,
-      cantidad: parseFloat(datosformulario.value.cantidad),
-      monto: parseFloat(datosformulario.value.monto),
-      fechaHora: new Date().toISOString()
+    
+    // Formatear la fecha correctamente para la API
+    const payload = {
+      ...datosformulario.value,
+      date: new Date(datosformulario.value.date).toISOString()
     }
 
-    console.log("Enviando al backend:", JSON.stringify(compra, null, 2))
-    await axios.post('http://localhost:5272/api/Transactions', compra)
+    await axios.post("http://localhost:5272/api/Transactions", payload)
+    mensaje.value = '✅ Transaction completed successfully'
 
-    mensaje.value = '✅ Datos enviados al backend'
-
-    datosformulario.value = {
-      cryptoCode: '',
-      accion: 'purchase',
-      ClienteId: 1,
-      cantidad: 0.00000001,
-      monto: 0,
-      fechayhora: ''
-    }
+    // Resetear formulario
+    datosformulario.value.cryptoAmount = 0.00000001
+    datosformulario.value.date = new Date().toISOString().slice(0, 16)
+    
   } catch (err) {
-    console.error(err)
-    error.value = 'Error al enviar los datos al backend'
+    console.error('Error:', err)
+    error.value = err?.response?.data?.message || err?.response?.data || 'Error sending data'
   } finally {
     loading.value = false
   }
 }
-
-const fechaHoraActual = ref('')
-
-function formatearFechaHora(date) {
-  const yyyy = date.getFullYear()
-  const mm = String(date.getMonth() + 1).padStart(2, '0')
-  const dd = String(date.getDate()).padStart(2, '0')
-  const hh = String(date.getHours()).padStart(2, '0')
-  const min = String(date.getMinutes()).padStart(2, '0')
-  return `${yyyy}-${mm}-${dd} ${hh}:${min}`
-}
-
-function actualizarFechaHora() {
-  fechaHoraActual.value = formatearFechaHora(new Date())
-}
-
-let intervalo
-
-onMounted(() => {
-  actualizarFechaHora()
-  intervalo = setInterval(actualizarFechaHora, 60000)
-})
-
-onBeforeUnmount(() => {
-  clearInterval(intervalo)
-})
 </script>
 
 <style scoped>
-.purchase-container {
-  border-radius: 15px;
-  background: linear-gradient(135deg, #0a0f1c, #1e3c72);
-  min-height: 100vh;
+/* Tus estilos existentes se mantienen igual */
+.new-trade-container {
+  border-radius: 6px;
+  background: #f3f4f6;
   padding: 2rem;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  font-family: 'Inter', sans-serif;
+  color: #1e1e1e;
 }
 
-.card {
-margin-bottom: 40px;
-  background: linear-gradient(to bottom right, #f8fafc, #e2e8f0);
-  border-radius: 1.2rem;
-  padding: 2rem;
-  width: 100%;
-  max-width: 480px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
-  animation: fadeIn 0.5s ease-out;
+.page-title {
+  color: #030711;
+  font-size: 24px;
+  font-weight: 700;
 }
 
-.card-header {
-  text-align: center;
+.subtitle {
+  color: #71717a;
+  font-size: 16px;
   margin-bottom: 1.5rem;
 }
 
-.card-header h2 {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: #0f172a;
+.content-wrapper {
+  display: flex;
+  gap: 1.5rem;
 }
 
-.card-header p {
-  font-size: 0.95rem;
-  color: #475569;
+.card {
+  background: white;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  flex: 1;
+}
+
+.trade-details {
+  flex: 2;
+}
+
+.recommendation {
+  flex: 1;
+}
+
+.section-title {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.section-subtitle {
+  font-size: 14px;
+  color: #71717a;
+  margin: 6px 0px 0px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .form-group {
-  margin-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group.full-width {
+  grid-column: span 2;
 }
 
 label {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #334155;
-  display: block;
-  margin-bottom: 0.4rem;
-}
-.select-crypto {
-  width: 95%;
-}
-input,
-select {
-  width: 95%;
-  padding: 0.65rem 0.85rem;
-  border-radius: 0.5rem;
-  border: 1px solid #cbd5e1;
-  font-size: 1rem;
-  background: white;
-  color: #0f172a;
-  transition: all 0.3s;
+  color: #030711;
+  font-size: 14px;
+  font-weight: 300;
+  margin-bottom: 1px;
+  margin-top: 5px;
 }
 
-input:focus,
-select:focus {
+.input {
+  background: #f0f0f0;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  margin: 8px 0px 0px;
+  padding: 8px 12px;
+  font-size: 0.95rem;
   outline: none;
-  border-color: #0ea5e9;
-  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.25);
 }
 
-button {
-  width: 100%;
-  background: linear-gradient(135deg, #0ea5e9, #0284c7);
-  color: white;
-  padding: 0.75rem;
-  border: none;
-  border-radius: 0.6rem;
+.input:focus {
+  border-color: #6d28d9;
+  box-shadow: 0 0 0 2px rgba(109, 40, 217, 0.2);
+}
+
+.btn-recommendation {
+  margin-top: 20px;
+  background: #4A0080;
+  color: #fafafa;
+  font-size: 14px;
   font-weight: 600;
-  font-size: 1rem;
-  cursor: pointer;
-  box-shadow: 0 6px 14px rgba(14, 165, 233, 0.35);
-  transition: all 0.2s;
-}
-
-button:hover {
-  transform: scale(1.02);
-  background: linear-gradient(135deg, #0284c7, #0369a1);
-}
-
-.error-msg {
-  margin-top: 1rem;
-  color: #dc2626;
-  font-size: 0.9rem;
-  text-align: right;
-}
-
-@keyframes fadeIn {
-  from {
-    transform: translateY(10px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-.mensaje-exitoso {
-  color: #0f172a;
-}
-
-.mensaje-error {
-  color: #0f172a;
-}
-
-.fechaHora {
-  border: 2px solid #0f172a;
-  padding: 10px;
-  box-shadow: #0f172a;
+  padding: 8px 16px;
   border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
-.mensaje-error {
-  color: #dc2626;
-}
-.loading-mensaje {
-  
-  color: #141414;
+.btn-primary {
+  margin-top: 20px;
+  background: #4A0080;
+  color: #fafafa;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
+.btn-primary:hover {
+  background: #5b21b6;
+}
 
+.risk-score {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.slider {
+  flex: 1;
+  accent-color: #6d28d9;
+}
+
+.risk-value {
+  margin: 8px 0px 6px;
+  font-weight: 600;
+  font-size: 14px;
+}
 </style>

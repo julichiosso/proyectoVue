@@ -1,534 +1,471 @@
-  <template>
-    <div class="history-container">
-      <div class="card">
-        <div class="card-header">
-          <h2>📜 Historial de Movimientos</h2>
-          <p class="compra" style="color: whitesmoke;">
-            Compras y ventas realizadas por los clientes
-          </p>
-
-          <div class="buscarCliente"> 
-            <p class="seleccion" style="color: whitesmoke;">
-              Seleccione el cliente a buscar
-            </p>
-            <select  id="clientes" v-model="clienteSeleccionado" required>
-            <option
-            v-for="cliente in clientes"
-            :key="cliente.id"
-            :value="cliente.id"
-            >
-            {{ cliente.nombre.toUpperCase() }}
-            </option>
-            </select>
-
-            <p style="color: #e2e8f0;">Clientes cargados: {{ clientes.length }}</p>
-            <p style="color: #e2e8f0;">Movimientos cargados: {{ movimientos.length }}</p>
-          </div>
-
-          <button @click="obtenerMovimientos">Buscar</button>
-        </div>
-
-      <div v-if="movimientos.length === 0" class="empty-msg">
-        No hay movimientos registrados todavía.
-      </div>
- 
-      <div v-if="movimientos.length > 0" class="modern-movements">
-  <div
-    v-for="(mov, index) in movimientos"
-    :key="index"
-    class="movement-card"
-  >
-    <div class="movement-icon" :class="mov.accion === 'Compra' ? 'buy' : 'sell'">
-      <span class="material-symbols-outlined">
-        {{ mov.accion === 'Compra' ? 'trending_up' : 'trending_down' }}
-      </span>
+<template>
+  <div class="transaction-history">
+    <div class="header">
+      <h1>Transaction History</h1>
+      <p>Review all past buy and sell orders.</p>
     </div>
 
-    <div class="movement-info">
-      <div class="movement-header">
-        <h3>{{ mov.cryptoCode.toUpperCase() }}</h3>
-        <span class="action-tag" :class="mov.accion === 'Compra' ? 'buy' : 'sell'">
-          {{ mov.accion }}
-        </span>
+    <div class="transactions-box">
+      <div class="transactions-header">
+        <div>
+          <h2>All Transactions</h2>
+          <p>A complete record of all trades.</p>
+        </div>
+        <div class="actions">
+          <select>
+            <option>Filter by client...</option>
+          </select>
+          <button 
+          :to="{name: 'AltaCompra'}"
+          class="new-trade">+ New Trade</button>
+        </div>
       </div>
 
-      <div class="movement-body">
-        <p class="monto">{{ formatCurrency(mov.montoARS) }}</p>
-        <p class="detalle">Cantidad: {{ mov.cantidad }}</p>
-        <p class="detalle">Fecha: {{ formatFecha(mov.fechaHora) }}</p>
-      </div>
+      <table class="transactions-table">
+        <thead>
+          <tr>
+            <th>Client</th>
+            <th>Type</th>
+            <th>Asset</th>
+            <th>Amount</th>
+            <th>Value (USD)</th>
+            <th>Date</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(tx, index) in transactions" :key="index">
+            <td>{{ tx.client }}</td>
+            <td><span class="tag">Purchase</span></td>
+            <td>{{ tx.asset }}</td>
+            <td>{{ tx.amount }}</td>
+            <td class="value">{{ tx.value }}</td>
+            <td>{{ tx.date }}</td>
+            <td class="menu-cell">
+              <button class="menu-btn" @click="toggleMenu(index)">⋯</button>
+              <div v-if="activeMenu === index" class="dropdown">
+                <p class="dropdown-title">Actions</p>
+                <p @click="viewAction(tx)">View</p>
+                <p @click="editAction(tx)">Edit</p>
+                <p class="delete" @click="deleteAction(tx)">Delete</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
-</div>
-      </div>
-    </div>
-  </template>
+</template>
 
-  <script setup>
-  import { ref, onMounted } from 'vue'
-  import axios from 'axios'
+<script>
 
-  const clientes = ref([])
-  const clienteSeleccionado = ref('')
-  const movimientos = ref([])
-
-  const datosformulario = ref({
-    id: 0,
-    cryptoCode: '',
-    accion: '',
-    cantidad: 0,
-    monto: 0,
-    fechayhora: ''
-  })
-  const ultimaTransaccion = ref(null)
-
-  function guardarTransaccion() {
-    // Lógica para guardar (ejemplo simulado aquí)
-    ultimaTransaccion.value = { ...datosformulario.value }
-  }
-  onMounted(async () => {
-    try {
-      const response = await axios.get('http://localhost:5272/api/Cliente')
-      console.log('Respuesta cruda de API clientes:', response.data)
-      
-      // Ajuste según la estructura real
-      clientes.value = Array.isArray(response.data) ? response.data : response.data.data
-
-      console.log('Clientes cargados en clientes.value:', clientes.value)
-    } catch (error) {
-      console.error('Error al obtener clientes:', error)
-    }
-  })
-  const obtenerMovimientos = async () => {
-    
-
-    try {
-      const response = await axios.get(
-        `http://localhost:5272/api/Transactions/${clienteSeleccionado.value}`
-      );
-
-      console.log('Datos recibidos API:', response.data);
-
-      if (Array.isArray(response.data)) {
-        movimientos.value = response.data;
-      } else if (response.data && Array.isArray(response.data.data)) {
-        movimientos.value = response.data.data;
-      } else {
-        movimientos.value = [];
-      }
-      } catch (error) {
-      console.error('Error al obtener transacciones:', error);
-      movimientos.value = [];
+export default {
+  data() {
+    return {
+      activeMenu: null,
+      transactions: [
+        { client: "Pedro Gonzales", asset: "₿ Bitcoin", amount: "0.5000 BTC", value: "$30.000", date: "1/10/2023" },
+        { client: "Agustin Ruatta", asset: "♦ Ethereum", amount: "2.0000 ETH", value: "$4000", date: "2/10/2023" },
+        { client: "Pedro Gonzales", asset: "💲 USD Coin", amount: "1000.0000 USDC", value: "$1000", date: "3/10/2023" },
+        { client: "Fernando Cardona", asset: "₿ Bitcoin", amount: "0.1000 BTC", value: "$6500", date: "4/10/2023" },
+        { client: "Pedro Gonzales", asset: "♦ Ethereum", amount: "1.0000 ETH", value: "$2100", date: "5/10/2023" }
+      ]
+    };
+  },
+  methods: {
+    toggleMenu(index) {
+      this.activeMenu = this.activeMenu === index ? null : index;
+    },
+    viewAction(tx) {
+      alert(`Viewing transaction for ${tx.client}`);
+    },
+    editAction(tx) {
+      alert(`Editing transaction for ${tx.client}`);
+    },
+    deleteAction(tx) {
+      alert(`Deleting transaction for ${tx.client}`);
     }
   }
+};
+</script>
 
-  function mostrarDetalle(mov) {
-    datosformulario.value = {
-      id: mov.id,
-      cryptoCode: mov.cryptoCode,
-      accion: mov.accion,
-      cantidad: mov.cantidad,
-      monto: mov.montoARS,
-      fechayhora: mov.fechaHora
-    }
-  }
-
-  function formatCurrency(value) {
-    return value.toLocaleString('es-AR', {
-      style: 'currency',
-      currency: 'ARS'
-    })
-  }
-
-  function formatFecha(fechaISO) {
-    const date = new Date(fechaISO)
-    return date.toLocaleDateString('es-AR', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
-  </script>
-
-  <style scoped>
-
-  .form-group {
-    margin-bottom: 20px;
-  }
-
-  label {
-    display: block;
-    font-weight: bold;
-    margin-bottom: 5px;
-    color: #dfdcdc;
-  }
-  h2 {
-    color: wheat;
-  }
-  p {
-  
-    color: #0984ff;
-    padding: 10px;
-    border-radius: 10px;
-    font-weight: 500;
-  }
-
-  button {
-    margin-top: 20px;
-    padding: 12px 20px;
-    border: 2px solid #ffffff;
-    background-color: transparent;
-    border-radius: 12px;
-    color: #ffffff;
-    cursor: pointer;
-    transition: all 0.3s;
-    font-weight: bold;
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
-  }
-
-  button:hover {
-    background-color: #ffffff;
-    color: #003366;
-    transform: translateY(-2px);
-  }
-  .clientes-container {
-    width: 90%;
-    max-width: 600px;
-    margin: 40px auto;
-    background-color: #007bff;
-    padding: 30px;
-    border-radius: 30px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  }
-
-  .clientes-header {
-    background-color: #ffffff;
-    padding: 20px;
-    border-radius: 20px;
-    text-align: center;
-    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
-    margin-bottom: 25px;
-  }
-
-  .clientes-header h2 {
-    margin: 0;
-    color: #003366;
-    font-weight: bold;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-  }
-
-  .clientes-container select {
-    width: 100%;
-    padding: 12px;
-    border-radius: 12px;
-    border: none;
-    font-size: 1rem;
-    background-color: white;
-    color: #003366;
-  }
-
-  .eliminar, .modificar, .informacion{
-  background-color: #1e293b;
-  margin: 10px;
-  float: right;
-  align-items: center;
-  gap:20px
-  }
-  .eliminar:hover, .modificar:hover, .informacion:hover{
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
-      border: 2px solid #1e293b;
-      background-color: #ffffff;
-      color: black;
-  }
-
-  .card {
-    max-height: 80vh; /* altura máxima visible */
-    overflow-y: auto; /* activa scroll vertical */
-    padding-right: 10px;
-    scroll-behavior:smooth;  
-  }
-  #clientes {
-    width: 80%;
-    height: 20%;
-    padding: 10px;
-    border: 3px solid #0f172a;
-    border-radius: 15px;
-  }
-  .history-container {
-    border-radius: 15px;
-    background: linear-gradient(135deg, #0a0f1c, #1e3c72);
-    min-height: 100vh;
-    padding: 2rem;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-  }
-
-  .card {
-    background: linear-gradient(to bottom right, #041d36, #5387cc);
-    border-radius: 1.2rem;
-    padding: 2rem;
-    width: 100%;
-    max-width: 720px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    animation: fadeIn 0.5s ease;
-  }
-
-  .card-header {
-    margin-bottom: 1.5rem;
-    text-align: center;
-  }
-  select, option{
-    color: black;
-  }
-  .card-header h2 {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: #ececec;
-  }
-
-  .card-header p {
-    font-size: 0.95rem;
-    color: #475569;
-  }
-
-  .empty-msg {
-    text-align: center;
-    color: #a0afc4;
-    padding: 2rem 0;
-    font-size: 1rem;
-  }
-
-  .movement-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    max-height: 500px;
-    overflow-y: auto;
-    padding-right: 0.5rem;
-  }
-
-  .movement-cards-container {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  margin-top: 2rem;
+<style scoped>
+.transaction-history {
+  font-family: Arial, sans-serif;
+  background: #f8f8f8;
+  padding: 20px;
 }
 
-.movement-card-gradient {
-  background: linear-gradient(135deg, #1e3a8a, #0ea5e9);
-  padding: 1.5rem;
-  border-radius: 1.2rem;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-  color: #f8fafc;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+.header h1 {
+  font-size: 24px;
+  margin: 0;
+}
+
+.header p {
+  color: #666;
+  margin-top: 4px;
+}
+
+.transactions-box {
+  background: white;
+  border-radius: 8px;
+  margin-top: 20px;
+  padding: 20px;
+}
+
+.transactions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.transactions-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.transactions-header p {
+  margin: 0;
+  color: #777;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.actions select {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.new-trade {
+  background: #4A0080;
+  transition: background 0.2s;
+  font-size: 14px;
+  font-weight: 600;
+  background-color: #c4c4c4;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
   cursor: pointer;
 }
 
-.movement-card-gradient:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.4);
+.new-trade:hover{
+  background: #5b21b6;
+}
+.transactions-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
 }
 
-.card-header-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.crypto-code {
-  font-size: 1.3rem;
+.transactions-table th {
+  text-align: left;
   font-weight: bold;
-  text-shadow: 1px 1px 2px #000;
+  padding: 10px 0;
+  color: #555;
 }
 
-.badge {
-  padding: 0.4rem 0.8rem;
-  border-radius: 999px;
-  font-weight: 600;
-  font-size: 0.9rem;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+.transactions-table td {
+  padding: 12px 0;
+  border-top: 1px solid #eee;
+  font-size: 14px;
 }
 
-.badge.compra {
-  background-color: #22c55e;
-  color: #fff;
+
+.tag {
+  background: #e6f7ee;
+  color: #2d9d4a;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 13px;
 }
 
-.badge.venta {
-  background-color: #ef4444;
-  color: #fff;
+.value {
+  color: #c07a00;
 }
 
-.card-body-info p {
-  margin: 0.2rem 0;
-  font-size: 0.95rem;
-  color: #e2e8f0;
+/* Menú de 3 puntos */
+.menu-cell {
+  position: relative;
 }
-  .movement-card {
-    background-color: #ffffff;
-    border-radius: 1rem;
-    padding: 1.2rem;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    transition: background 0.3s ease;
+
+.menu-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.dropdown {
+  position: absolute;
+  top: 25px;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  width: 120px;
+  z-index: 10;
+}
+
+.dropdown p {
+  margin: 0;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.dropdown p:hover {
+  background: #f5f5f5;
+}
+
+.dropdown-title {
+  font-weight: bold;
+  color: #444;
+  cursor: default;
+}
+
+.delete {
+  color: red;
+}
+</style>
+
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import axios from 'axios'
+
+
+const clientes = ref([])
+const clienteSeleccionado = ref('')
+const movimientos = ref([])
+
+const activeMenu = ref(null);
+
+
+const transactions = ref([
+  { client: "Pedro Gonzales", asset: "₿ Bitcoin", amount: "0.5000 BTC", value: "$30.000", date: "1/10/2023" },
+  { client: "Agustin Ruatta", asset: "♦ Ethereum", amount: "2.0000 ETH", value: "$4000", date: "2/10/2023" },
+  { client: "Pedro Gonzales", asset: "💲 USD Coin", amount: "1000.0000 USDC", value: "$1000", date: "3/10/2023" },
+  { client: "Fernando Cardona", asset: "₿ Bitcoin", amount: "0.1000 BTC", value: "$6500", date: "4/10/2023" },
+  { client: "Pedro Gonzales", asset: "♦ Ethereum", amount: "1.0000 ETH", value: "$2100", date: "5/10/2023" }
+]);
+
+function toggleMenu(index) {
+  activeMenu.value = activeMenu.value === index ? null : index;
+}
+
+function viewAction(tx) {
+  alert(`Viewing transaction for ${tx.client}`);
+}
+
+function editAction(tx) {
+  alert(`Editing transaction for ${tx.client}`);
+}
+
+function deleteAction(tx) {
+  alert(`Deleting transaction for ${tx.client}`);
+}
+
+
+const datosformulario = ref({
+  id: 0,
+  cryptoCode: '',
+  accion: '',
+  cantidad: 0,
+  monto: 0,
+  fechayhora: ''
+})
+
+const cryptoNames = {
+  BTC: 'Bitcoin',
+  ETH: 'Ethereum',
+  USDT: 'Tether',
+  BNB: 'Bnb',
+  // Agrega más según necesites
+}
+
+function getCryptoName(code) {
+  return cryptoNames[code] || code
+}
+
+const ultimaTransaccion = ref(null)
+
+function guardarTransaccion() {
+  ultimaTransaccion.value = { ...datosformulario.value }
+}
+
+onMounted(async () => {
+  try {
+    const response = await axios.get('http://localhost:5272/api/Cliente')
+    clientes.value = Array.isArray(response.data) ? response.data : response.data.data
+  } catch (error) {
+    console.error('Error al obtener clientes:', error)
+  }
+})
+
+const obtenerMovimientos = async () => {
+  if (!clienteSeleccionado.value) {
+    alert('Por favor seleccione un cliente.')
+    return
   }
 
-  .movement-card:hover {
-    background-color: #f0f9ff;
-  }
+  try {
+    const response = await axios.get(
+      `http://localhost:5272/api/Transactions/byClient/${clienteSeleccionado.value}`
+    )
+    console.log("Raw movimientos:", response.data)  
 
-  .movement-info h3 {
-    font-size: 1.1rem;
-    color: #1e293b;
-    font-weight: 600;
-    margin-bottom: 0.4rem;
-  }
-
-  .movement-info p {
-    font-size: 0.9rem;
-    color: #475569;
-    margin-bottom: 0.3rem;
-  }
-
-  .movement-meta {
-    text-align: right;
-  }
-
-  .amount {
-    font-size: 1.1rem;
-    font-weight: bold;
-    color: #059669;
-  }
-
-  .date {
-    font-size: 0.8rem;
-    color: #94a3b8;
-  }
-
-  ::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background-color: #94a3b8;
-    border-radius: 4px;
-  }
-
-  @keyframes fadeIn {
-    from {
-      transform: translateY(10px);
-      opacity: 0;
+    if (Array.isArray(response.data)) {
+      movimientos.value = response.data.map(mov => ({
+      id: mov.id,
+      accion: mov.action === 'purchase' ? 'Compra' : 'Venta',
+      cryptoCode: mov.crypto_code,
+      cantidad: mov.crypto_amount,                // bien
+      montoARS: isNaN(parseFloat(mov.money)) ? 0 : parseFloat(mov.money),
+      fechaHora: mov.datetime ? mov.datetime : null
+}))
+    } else {
+      movimientos.value = []
     }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
+  } catch (error) {
+    console.error("Error al obtener las transacciones: ", error)
+    movimientos.value = []
   }
-
-
-.modern-movements {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  padding: 1rem 0;
 }
 
-.movement-card {
-  display: flex;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(14px);
-  border-radius: 16px;
-  padding: 1.2rem;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  font-family: 'Inter', sans-serif;
+function mostrarDetalle(mov) {
+  datosformulario.value = {
+    id: mov.id,
+    cryptoCode: mov.cryptoCode,
+    accion: mov.accion,
+    cantidad: mov.cantidad,
+    monto: mov.montoARS,
+    fechayhora: mov.fechaHora
+  }
 }
 
-.movement-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+function formatCurrency(value) {
+  return value.toLocaleString('es-AR', {
+    style: 'currency',
+    currency: 'ARS'
+  })
 }
 
-.movement-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 1.2rem;
+function formatFecha(fechaISO) {
+  const date = new Date(fechaISO)
+  return isNaN(date.getTime())
+    ? 'Fecha inválida'
+    : date.toLocaleDateString('es-AR', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+}
+</script>
+
+  <style scoped>
+.transaction-history {
+  border-radius: 6px;
+  font-family: Arial, sans-serif;
+  background: #f8f8f8;
+  padding: 20px;
 }
 
-.movement-icon.buy {
-  background: #10b981;
+.header h1 {
+  color: #030711;
+  font-size: 24px;
+  margin: 0;
 }
 
-.movement-icon.sell {
-  background: #ef4444;
+.header p {
+  color: #71717a;
+  margin-top: 4px;
 }
 
-.material-symbols-outlined {
-  color: white;
-  font-size: 28px;
+.transactions-box {
+  background: white;
+  border-radius: 8px;
+  margin-top: 20px;
+  padding: 20px;
 }
 
-.movement-info {
-  flex: 1;
-}
-
-.movement-header {
+.transactions-header {
+  color: #030711;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.movement-header h3 {
+.transactions-header h2 {
   margin: 0;
-  font-size: 1.2rem;
-  color: #f1f5f9;
+  font-size: 18px;
 }
 
-.action-tag {
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 4px 10px;
+.transactions-header p {
+  margin: 0;
+  color: #71717a;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.actions select {
+  padding: 8px;
   border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.new-trade {
+  background-color: #6c2dc7;
   color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
 }
 
-.action-tag.buy {
-  background: #10b981;
+.transactions-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
 }
 
-.action-tag.sell {
-  background: #ef4444;
+.transactions-table th {
+  text-align: left;
+  font-weight: bold;
+  padding: 10px 0;
+  color: #71717a;
 }
 
-.movement-body {
-  margin-top: 6px;
+.transactions-table td {
+  color:#030711;
+  padding: 12px 0;
+  border-top: 1px solid #eee;
 }
 
-.monto {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #e2e8f0;
-  margin: 4px 0;
+.tag {
+  background: #e6f7ee;
+  color: #2d9d4a;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 13px;
 }
 
-.detalle {
-  font-size: 0.85rem;
-  color: #cbd5e1;
-  margin: 2px 0;
+.value {
+  color: #c07a00;
 }
-  </style>
+
+.dropdown-title {
+  font-size: 14px;
+}
+.dropdown{
+  font-size: 14px;
+}
+</style>

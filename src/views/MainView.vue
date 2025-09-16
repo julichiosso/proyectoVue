@@ -5,9 +5,9 @@
         <div class="container">
     <Header></Header>
     <SideBar></SideBar>
-    
+
     <div class="content">
-        <router-view></router-view>
+        <router-view/>
     </div>
     <div class="datos-notebook">
        
@@ -19,7 +19,6 @@
     </body>
 
 
-<Footer/>
 </template>
 
 <script setup>
