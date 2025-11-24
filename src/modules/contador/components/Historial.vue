@@ -1,108 +1,392 @@
 <template>
   <div class="transaction-history">
     <div class="header">
-      <h1>Transaction History</h1>
-      <p>Review all past buy and sell orders.</p>
+      <h1>Historial de Transacciones</h1>
+      <p>Revise todas las órdenes de compra y venta anteriores.</p>
     </div>
 
     <div class="transactions-box">
       <div class="transactions-header">
         <div>
-          <h2>All Transactions</h2>
-          <p>A complete record of all trades.</p>
+          <h2>Todas las transacciones</h2>
+          <p>Un registro completo de todas las operaciones.</p>
         </div>
         <div class="actions">
-          <select>
-            <option>Filter by client...</option>
+          <select v-model="clienteSeleccionado" @change="obtenerMovimientos">
+            <option value="">Filtrar por cliente...</option>
+            <option
+            v-for="cliente in clientesUnicos"
+            :key="cliente.id"
+            :value="cliente.id"
+            >
+              {{ cliente.nombre }}
+            </option>
+
           </select>
-          <button 
-          :to="{name: 'AltaCompra'}"
-          class="new-trade">+ New Trade</button>
+
+          <!-- Botón de nueva compra -->
+          <router-link to="/lista-de-tareas" class="new-trade">+ Nueva Compra</router-link>
         </div>
       </div>
 
       <table class="transactions-table">
         <thead>
           <tr>
-            <th>Client</th>
-            <th>Type</th>
-            <th>Asset</th>
-            <th>Amount</th>
-            <th>Value (USD)</th>
-            <th>Date</th>
-            <th></th>
+            <th>Cliente</th>
+            <th>Tipo</th>
+            <th>Crypto</th>
+            <th>Cantidad</th>
+            <th>Valor (ARS)</th>
+            <th>Fecha</th>
           </tr>
         </thead>
+
         <tbody>
-          <tr v-for="(tx, index) in transactions" :key="index">
-            <td>{{ tx.client }}</td>
-            <td><span class="tag">Purchase</span></td>
-            <td>{{ tx.asset }}</td>
-            <td>{{ tx.amount }}</td>
-            <td class="value">{{ tx.value }}</td>
-            <td>{{ tx.date }}</td>
+          <tr v-for="(tx, index) in movimientos" :key="tx.id">
+            <td>{{ getClientName(tx.clientId) }}</td>
+            <td>
+              <span class="tag" :class="{ 'tag-sell': tx.accion === 'Venta' }">
+                {{ tx.accion === 'Venta' ? 'Venta' : 'Compra' }}
+              </span>
+            </td>
+            <td>{{ getCryptoIcon(tx.cryptoCode) }} {{ getCryptoName(tx.cryptoCode) }}</td>
+            <td>{{ tx.cantidad }} {{ tx.cryptoCode }}</td>
+            <td class="value">${{ formatUSD(tx.montoARS) }}</td>
+            <td>{{ formatDate(tx.fechaHora) }}</td>
             <td class="menu-cell">
-              <button class="menu-btn" @click="toggleMenu(index)">⋯</button>
-              <div v-if="activeMenu === index" class="dropdown">
-                <p class="dropdown-title">Actions</p>
-                <p @click="viewAction(tx)">View</p>
-                <p @click="editAction(tx)">Edit</p>
-                <p class="delete" @click="deleteAction(tx)">Delete</p>
+              <button class="menu-btn" @click.stop="toggleMenu(index)">⋯</button>
+              <div v-if="activeMenu === index" class="dropdown" @click.stop>
+                <p class="dropdown-title">Acciones</p>
+                <p @click.stop="viewAction(tx)">Ver</p>
+                <p @click.stop="editAction(tx)">Editar</p>
+                <p class="delete" @click.stop="deleteAction(tx)">Eliminar</p>
               </div>
             </td>
           </tr>
         </tbody>
       </table>
+
+      <!-- ===== MODAL OVERLAY ===== -->
+      <div v-if="modal.visible" class="modal-overlay" @click="closeModal"></div>
+
+      <!-- ===== MODAL CARD ===== -->
+      <div v-if="modal.visible" class="modal-card">
+        <h3 class="modal-title">{{ modal.title }}</h3>
+
+        <div class="modal-body">
+          <!-- Ver -->
+          <div v-if="modal.type === 'view'">
+            <p><strong>Cliente:</strong> {{ getClientName(modal.tx.clientId) }}</p>
+            <p><strong>Tipo:</strong> {{ modal.tx.accion }}</p>
+            <p><strong>Crypto:</strong> {{ getCryptoName(modal.tx.cryptoCode) }}</p>
+            <p><strong>Cantidad:</strong> {{ modal.tx.cantidad }}</p>
+            <p><strong>Valor:</strong> ${{ formatUSD(modal.tx.montoARS) }}</p>
+            <p><strong>Fecha:</strong> {{ formatDate(modal.tx.fechaHora) }}</p>
+          </div>
+
+          <!-- Edit -->
+          <div v-if="modal.type === 'edit'" class="edit-form">
+            <label>Cripto</label>
+            <select v-model="editData.cryptoCode" class="input">
+              <option value="btc">BTC</option>
+              <option value="eth">ETH</option>
+              <option value="usdc">USDC</option>
+            </select>
+
+            <label>Cantidad</label>
+            <input v-model="editData.cantidad" type="number" step="0.0001" />
+
+            <label>Valor (ARS)</label>
+            <input
+              type="text"
+              v-model="editData.valorARS"
+              class="input"
+              readonly
+            />
+
+            <button class="primary-btn" @click="guardarEdicion">Guardar Cambios</button>
+          </div>
+
+          <!-- Delete -->
+          <div v-if="modal.type === 'delete'">
+            <p>¿Seguro que deseas eliminar esta transacción?</p>
+            <button class="delete-btn" @click="confirmDelete(modal.tx)">Eliminar</button>
+          </div>
+        </div>
+
+        <button class="close-btn" @click="closeModal">Cerrar</button>
+      </div>
+
+      <div v-if="movimientos.length === 0" class="no-transactions">
+        <p>No se encontraron transacciones</p>
+      </div>
     </div>
+
+    <div v-if="toast.visible" class="toast">{{ toast.message }}</div>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import axios from 'axios'
+// ---------- TOAST ----------
+const toast = ref({
+  visible: false,
+  message: ""
+})
 
-export default {
-  data() {
-    return {
-      activeMenu: null,
-      transactions: [
-        { client: "Pedro Gonzales", asset: "₿ Bitcoin", amount: "0.5000 BTC", value: "$30.000", date: "1/10/2023" },
-        { client: "Agustin Ruatta", asset: "♦ Ethereum", amount: "2.0000 ETH", value: "$4000", date: "2/10/2023" },
-        { client: "Pedro Gonzales", asset: "💲 USD Coin", amount: "1000.0000 USDC", value: "$1000", date: "3/10/2023" },
-        { client: "Fernando Cardona", asset: "₿ Bitcoin", amount: "0.1000 BTC", value: "$6500", date: "4/10/2023" },
-        { client: "Pedro Gonzales", asset: "♦ Ethereum", amount: "1.0000 ETH", value: "$2100", date: "5/10/2023" }
-      ]
-    };
-  },
-  methods: {
-    toggleMenu(index) {
-      this.activeMenu = this.activeMenu === index ? null : index;
-    },
-    viewAction(tx) {
-      alert(`Viewing transaction for ${tx.client}`);
-    },
-    editAction(tx) {
-      alert(`Editing transaction for ${tx.client}`);
-    },
-    deleteAction(tx) {
-      alert(`Deleting transaction for ${tx.client}`);
-    }
+function showToast(msg) {
+  toast.value.message = msg
+  toast.value.visible = true
+  setTimeout(() => toast.value.visible = false, 2500)
+}
+
+
+// ---------- STATE ----------
+const clientes = ref([])
+const clienteSeleccionado = ref('')
+const movimientos = ref([])
+const activeMenu = ref(null)
+
+const modal = ref({
+  visible: false,
+  type: null,
+  title: '',
+  tx: null
+})
+
+const editData = ref({
+  id: null,
+  cryptoCode: '',
+  cantidad: 0,
+  valorARS: 0
+})
+
+// ---------- MENU ----------
+function toggleMenu(index) {
+  activeMenu.value = activeMenu.value === index ? null : index
+}
+
+function handleClickOutside(event) {
+  const isMenuCell = event.target.closest('.menu-cell')
+  const isDropdown = event.target.closest('.dropdown')
+  if (isMenuCell || isDropdown) return
+  activeMenu.value = null
+}
+
+// ---------- MODAL ACTIONS ----------
+function viewAction(tx) {
+  modal.value = { visible: true, type: 'view', title: 'Detalles de la Transacción', tx: { ...tx } }
+}
+
+function editAction(tx) {
+  modal.value = {
+    visible: true,
+    type: 'edit',
+    title: 'Editar Transacción',
+    tx
   }
-};
+
+  editData.value = {
+    id: tx.id,
+    cryptoCode: tx.cryptoCode.toLowerCase(),
+    cantidad: Number(tx.cantidad),
+    valorARS: Number(tx.montoARS)
+  }
+}
+
+function deleteAction(tx) {
+  modal.value = {
+    visible: true,
+    type: 'delete',
+    title: 'Eliminar transacción',
+    tx
+  }
+}
+
+function closeModal() {
+  modal.value.visible = false
+  activeMenu.value = null
+}
+
+// ---------- API HELPERS ----------
+const obtenerPrecioActual = async (cripto) => {
+  try {
+    const resp = await axios.get(`http://localhost:5272/api/Transactions/precio/${cripto}`)
+    return resp.data
+  } catch {
+    return 0
+  }
+}
+
+// ---------- ACTUALIZAR (PUT robusto: GET -> modify -> PUT) ----------
+async function guardarEdicion() {
+  try {
+    const id = editData.value.id
+
+    if (!id) return console.error("No hay id para editar")
+
+    // 1. Obtener la transacción original del backend
+    const getResp = await axios.get(`http://localhost:5272/api/Transactions/${id}`)
+    const original = getResp.data
+
+    // 2. Calcular monto nuevo
+    let precio = await obtenerPrecioActual(editData.value.cryptoCode)
+    let montoARSFinal = precio * Number(editData.value.cantidad)
+
+    // 3. Payload limpio SOLO con lo que el backend quiere
+    const payload = {
+      id: original.id,
+      clientId: original.clientId,
+      action: original.action, // buy | sell
+      cryptoCode: editData.value.cryptoCode.toUpperCase(),
+      cryptoAmount: Number(editData.value.cantidad),
+      montoARS: Number(montoARSFinal),
+      fechaHora: original.fechaHora
+    }
+
+    // 4. PUT al backend
+    await axios.put(`http://localhost:5272/api/Transactions/${id}`, payload)
+
+    // 5. Refrescar UI
+    modal.value.visible = false
+    await obtenerMovimientos()
+
+  } catch (err) {
+    console.error("Error guardando edición:", err)
+    console.log("Respuesta backend:", err?.response?.data)
+  }
+}
+
+
+// ---------- ELIMINAR ----------
+async function confirmDelete(tx) {
+  try {
+    await axios.delete(`http://localhost:5272/api/Transactions/${tx.id}`)
+    movimientos.value = movimientos.value.filter(m => m.id !== tx.id)
+    closeModal()
+    showToast("Transacción eliminada correctamente")
+  } catch (err) {
+    console.error("Error al borrar:", err)
+  }
+}
+
+
+
+// ---------- HELPERS ----------
+function getClientName(id) {
+  const c = clientes.value.find(cl => cl.id === id)
+  return c ? c.nombre : `Cliente ${id}`
+}
+
+const cryptoNames = { btc:"Bitcoin", eth:"Ethereum", usdc:"USD Coin" }
+function getCryptoName(code) {
+  return cryptoNames[code?.toLowerCase()] || code
+}
+
+const cryptoIcons = { btc:"₿", eth:"♦", usdc:"💲" }
+function getCryptoIcon(code) {
+  return cryptoIcons[code?.toLowerCase()] || "•"
+}
+
+function formatUSD(amount) {
+  return Number(amount).toLocaleString("en-US", { minimumFractionDigits: 2 })
+}
+
+function formatDate(dateString) {
+  if (!dateString) return "-"
+  return new Date(dateString).toLocaleDateString("es-AR")
+}
+
+// ---------- MAPEO API REAL ----------
+const mapTransaccion = mov => ({
+  id: mov.id,
+  clientId: mov.clientId,
+  accion: mov.action === "buy" ? "Compra" : "Venta",
+  cryptoCode: mov.cryptoCode,
+  cantidad: Number(mov.cryptoAmount),
+  montoARS: Number(mov.montoARS),
+  fechaHora: mov.fechaHora
+})
+
+
+// ---------- API TRANSACCIONES ----------
+async function obtenerHistorial() {
+  try {
+    const resp = await axios.get("http://localhost:5272/api/Transactions")
+    movimientos.value = resp.data.map(mapTransaccion)
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+async function obtenerMovimientos() {
+  try {
+    const url = clienteSeleccionado.value
+      ? `http://localhost:5272/api/Transactions/by-client/${clienteSeleccionado.value}`
+      : `http://localhost:5272/api/Transactions`
+
+    const resp = await axios.get(url)
+    movimientos.value = resp.data.map(mapTransaccion)
+  } catch {
+    movimientos.value = []
+  }
+}
+
+// ---------- WATCH ----------
+watch(() => editData.value.cantidad, async () => {
+  if (!editData.value.cryptoCode) return
+  const precio = await obtenerPrecioActual(editData.value.cryptoCode)
+  editData.value.valorARS = (precio * Number(editData.value.cantidad)).toFixed(2)
+})
+
+watch(() => editData.value.cryptoCode, async () => {
+  if (!editData.value.cantidad) return
+  const precio = await obtenerPrecioActual(editData.value.cryptoCode)
+  editData.value.valorARS = (precio * Number(editData.value.cantidad)).toFixed(2)
+})
+
+// ---------- MOUNT ----------
+onMounted(async () => {
+  document.addEventListener('click', handleClickOutside)
+
+  const resp = await axios.get("http://localhost:5272/api/Cliente")
+  clientes.value = resp.data
+
+  await obtenerHistorial()
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
+
+// clientes únicos
+const clientesUnicos = computed(() => {
+  const mapa = new Map()
+  for (const c of clientes.value) {
+    if (!mapa.has(c.id)) mapa.set(c.id, c)
+  }
+  return [...mapa.values()]
+})
 </script>
 
 <style scoped>
+/* === Mantengo todos tus estilos originales === */
 .transaction-history {
   font-family: Arial, sans-serif;
   background: #f8f8f8;
   padding: 20px;
+  border-radius: 6px;
 }
 
 .header h1 {
   font-size: 24px;
   margin: 0;
+  color: #030711;
 }
 
 .header p {
-  color: #666;
+  color: #71717A;
   margin-top: 4px;
 }
 
@@ -122,11 +406,12 @@ export default {
 .transactions-header h2 {
   margin: 0;
   font-size: 18px;
+  color: #030711;
 }
 
 .transactions-header p {
   margin: 0;
-  color: #777;
+  color: #71717A;  
 }
 
 .actions {
@@ -135,26 +420,28 @@ export default {
 }
 
 .actions select {
+  color: #505050;
   padding: 8px;
   border-radius: 6px;
   border: 1px solid #ccc;
 }
 
 .new-trade {
-  background: #4A0080;
+  background: #6d28d9;
+  color: white;
   transition: background 0.2s;
-  font-size: 14px;
-  font-weight: 600;
-  background-color: #c4c4c4;
+  font-size: 12px;
   border: none;
   padding: 8px 14px;
   border-radius: 6px;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .new-trade:hover{
   background: #5b21b6;
 }
+
 .transactions-table {
   width: 100%;
   border-collapse: collapse;
@@ -169,11 +456,11 @@ export default {
 }
 
 .transactions-table td {
+  color: #71717A;
   padding: 12px 0;
   border-top: 1px solid #eee;
   font-size: 14px;
 }
-
 
 .tag {
   background: #e6f7ee;
@@ -183,11 +470,15 @@ export default {
   font-size: 13px;
 }
 
+.tag-sell {
+  background: #fde8e8;
+  color: #dc2626;
+}
+
 .value {
   color: #c07a00;
 }
 
-/* Menú de 3 puntos */
 .menu-cell {
   position: relative;
 }
@@ -230,242 +521,124 @@ export default {
 .delete {
   color: red;
 }
-</style>
 
-
-<script setup>
-import { ref, onMounted } from 'vue'
-import axios from 'axios'
-
-
-const clientes = ref([])
-const clienteSeleccionado = ref('')
-const movimientos = ref([])
-
-const activeMenu = ref(null);
-
-
-const transactions = ref([
-  { client: "Pedro Gonzales", asset: "₿ Bitcoin", amount: "0.5000 BTC", value: "$30.000", date: "1/10/2023" },
-  { client: "Agustin Ruatta", asset: "♦ Ethereum", amount: "2.0000 ETH", value: "$4000", date: "2/10/2023" },
-  { client: "Pedro Gonzales", asset: "💲 USD Coin", amount: "1000.0000 USDC", value: "$1000", date: "3/10/2023" },
-  { client: "Fernando Cardona", asset: "₿ Bitcoin", amount: "0.1000 BTC", value: "$6500", date: "4/10/2023" },
-  { client: "Pedro Gonzales", asset: "♦ Ethereum", amount: "1.0000 ETH", value: "$2100", date: "5/10/2023" }
-]);
-
-function toggleMenu(index) {
-  activeMenu.value = activeMenu.value === index ? null : index;
-}
-
-function viewAction(tx) {
-  alert(`Viewing transaction for ${tx.client}`);
-}
-
-function editAction(tx) {
-  alert(`Editing transaction for ${tx.client}`);
-}
-
-function deleteAction(tx) {
-  alert(`Deleting transaction for ${tx.client}`);
-}
-
-
-const datosformulario = ref({
-  id: 0,
-  cryptoCode: '',
-  accion: '',
-  cantidad: 0,
-  monto: 0,
-  fechayhora: ''
-})
-
-const cryptoNames = {
-  BTC: 'Bitcoin',
-  ETH: 'Ethereum',
-  USDT: 'Tether',
-  BNB: 'Bnb',
-  // Agrega más según necesites
-}
-
-function getCryptoName(code) {
-  return cryptoNames[code] || code
-}
-
-const ultimaTransaccion = ref(null)
-
-function guardarTransaccion() {
-  ultimaTransaccion.value = { ...datosformulario.value }
-}
-
-onMounted(async () => {
-  try {
-    const response = await axios.get('http://localhost:5272/api/Cliente')
-    clientes.value = Array.isArray(response.data) ? response.data : response.data.data
-  } catch (error) {
-    console.error('Error al obtener clientes:', error)
-  }
-})
-
-const obtenerMovimientos = async () => {
-  if (!clienteSeleccionado.value) {
-    alert('Por favor seleccione un cliente.')
-    return
-  }
-
-  try {
-    const response = await axios.get(
-      `http://localhost:5272/api/Transactions/byClient/${clienteSeleccionado.value}`
-    )
-    console.log("Raw movimientos:", response.data)  
-
-    if (Array.isArray(response.data)) {
-      movimientos.value = response.data.map(mov => ({
-      id: mov.id,
-      accion: mov.action === 'purchase' ? 'Compra' : 'Venta',
-      cryptoCode: mov.crypto_code,
-      cantidad: mov.crypto_amount,                // bien
-      montoARS: isNaN(parseFloat(mov.money)) ? 0 : parseFloat(mov.money),
-      fechaHora: mov.datetime ? mov.datetime : null
-}))
-    } else {
-      movimientos.value = []
-    }
-  } catch (error) {
-    console.error("Error al obtener las transacciones: ", error)
-    movimientos.value = []
-  }
-}
-
-function mostrarDetalle(mov) {
-  datosformulario.value = {
-    id: mov.id,
-    cryptoCode: mov.cryptoCode,
-    accion: mov.accion,
-    cantidad: mov.cantidad,
-    monto: mov.montoARS,
-    fechayhora: mov.fechaHora
-  }
-}
-
-function formatCurrency(value) {
-  return value.toLocaleString('es-AR', {
-    style: 'currency',
-    currency: 'ARS'
-  })
-}
-
-function formatFecha(fechaISO) {
-  const date = new Date(fechaISO)
-  return isNaN(date.getTime())
-    ? 'Fecha inválida'
-    : date.toLocaleDateString('es-AR', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-}
-</script>
-
-  <style scoped>
-.transaction-history {
-  border-radius: 6px;
-  font-family: Arial, sans-serif;
-  background: #f8f8f8;
+.no-transactions {
+  text-align: center;
   padding: 20px;
+  color: #666;
 }
 
-.header h1 {
-  color: #030711;
-  font-size: 24px;
-  margin: 0;
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.25);
+  backdrop-filter: blur(2px);
+  z-index: 90;
 }
 
-.header p {
-  color: #71717a;
-  margin-top: 4px;
+.modal-card {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 22px;
+  width: 320px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+  z-index: 100;
+  animation: fadeIn 0.2s ease;
 }
 
-.transactions-box {
-  background: white;
-  border-radius: 8px;
-  margin-top: 20px;
-  padding: 20px;
-}
-
-.transactions-header {
-  color: #030711;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.transactions-header h2 {
-  margin: 0;
+.modal-title {
+  margin: 0 0 12px 0;
+  color: #111;
   font-size: 18px;
+  font-weight: 600;
 }
 
-.transactions-header p {
-  margin: 0;
-  color: #71717a;
+.modal-body p {
+  margin: 4px 0;
+  color: #444;
 }
 
-.actions {
-  display: flex;
-  gap: 10px;
+.edit-form label {
+  display: block;
+  margin-top: 10px;
+  font-size: 14px;
+  color: #333;
 }
 
-.actions select {
+.edit-form input,
+.edit-form select {
+  width: 100%;
+  margin-top: 4px;
   padding: 8px;
   border-radius: 6px;
   border: 1px solid #ccc;
 }
 
-.new-trade {
-  background-color: #6c2dc7;
-  color: white;
-  border: none;
-  padding: 8px 14px;
+.primary-btn {
+  width: 100%;
+  margin-top: 14px;
+  padding: 8px;
   border-radius: 6px;
+  border: none;
+  background: #6d28d9;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+}
+.primary-btn:hover {
+  background: #5b21b6;
+}
+
+.delete-btn {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: none;
+  background: #dc2626;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+}
+.delete-btn:hover {
+  background: #b91c1c;
+}
+
+.close-btn {
+  width: 100%;
+  margin-top: 14px;
+  padding: 6px;
+  background: none;
+  border: none;
+  color: #555;
   cursor: pointer;
 }
 
-.transactions-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
+@keyframes fadeIn {
+  from { opacity: 0; transform: translate(-50%, -48%); }
+  to { opacity: 1; transform: translate(-50%, -50%); }
 }
 
-.transactions-table th {
-  text-align: left;
-  font-weight: bold;
-  padding: 10px 0;
-  color: #71717a;
-}
-
-.transactions-table td {
-  color:#030711;
-  padding: 12px 0;
-  border-top: 1px solid #eee;
-}
-
-.tag {
-  background: #e6f7ee;
-  color: #2d9d4a;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 13px;
-}
-
-.value {
-  color: #c07a00;
-}
-
-.dropdown-title {
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #111827;
+  color: white;
+  padding: 12px 18px;
+  border-radius: 8px;
   font-size: 14px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+  opacity: 0;
+  animation: toastIn 0.3s ease forwards;
+  z-index: 200;
 }
-.dropdown{
-  font-size: 14px;
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>

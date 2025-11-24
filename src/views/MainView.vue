@@ -1,53 +1,47 @@
 <template>
+  <div class="layout">
+    <SideBar class="sidebar" />
     
-
-    <body>
-        <div class="container">
-    <Header></Header>
-    <SideBar></SideBar>
-
-    <div class="content">
-        <router-view/>
+    <div class="main-content">
+      <Header />
+      <div class="content">
+        <router-view />
+      </div>
     </div>
-    <div class="datos-notebook">
-       
-        
-    
-    </div>
-    
-</div>
-    </body>
-
-
+  </div>
 </template>
 
 <script setup>
-
-import SideBar from '../components/SideBar.vue';
-import Header from '../components/Header.vue';
-import Footer from '@/components/Footer.vue';
+import SideBar from '../components/SideBar.vue'
+import Header from '../components/Header.vue'
 </script>
 
-<style>
-
-
-main {
-  flex: 1; /* Esto hace que el contenido principal ocupe el espacio restante */
-}
-body { 
-    display: flex;
-  flex-direction: column;
+<style scoped>
+.layout {
+  display: flex;
   min-height: 100vh;
-    margin: 0;
-    background-color: #0F3D57;
-    color: #ECEFF1;
 }
-.container {
-    display: flex;
+
+/* --- SIDEBAR FIJO --- */
+.layout {
+  display: flex;
+  min-height: 100vh;
 }
-.content {
-    
-    flex: 1;
-    padding: 20px;
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 250px;
+  transition: margin-left .25s ease-in-out;
+}
+
+.sidebar.collapsed + .main-content {
+  margin-left: 80px;
 }
 </style>

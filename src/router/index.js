@@ -4,8 +4,7 @@ import Dashboard from '../modules/dashboard/views/Dashboard.vue'
 import ListaDeTareas from '../modules/listaDeTareas/components/AltaCompra.vue'
 import Registro from '../modules/registro/views/RegistrarView.vue'
 import Admin from '../modules/adm/components/views/AdminView.vue'
-
-
+import Usuario from '../modules/user/views/UsuarioView.vue'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -44,7 +43,13 @@ const router = createRouter({
       name: 'administration',
 
       component: Admin
-     }
+     },
+     {
+      path: '/usuario',
+      name: 'usuario',
+      
+      component: Usuario
+     },
   ],
 })
  

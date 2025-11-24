@@ -1,103 +1,256 @@
 <template>
   <div class="dashboard">
     <!-- Header -->
-    <h1 class="title">Dashboard</h1>
+    <h1 class="title">Panel Principal</h1>
 
-    <!-- Stats Cards -->
+    <!-- Tarjetas de estadísticas -->
     <div class="cards">
       <div class="card">
-        <p class="label">Total Portfolio Value</p>
-        <p class="value">$67,210.00</p>
-        <p class="change positive">+2.1% from last period</p>
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-dollar-sign h-4 w-4 text-muted-foreground"><line x1="12" x2="12" y1="2" y2="22"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        <p class="label">Valor total de la cartera</p>
+        <p class="value">${{ summary.totalPortfolioValue?.toLocaleString() || "0.00" }}</p>
+        <p class="change positive">+{{ summary.changePercent || 0 }}% respecto al período anterior</p>
       </div>
+
       <div class="card">
-        <p class="label">24h Performance</p>
-        <p class="value positive">+ $1,250.45</p>
-        <p class="change positive">+1.8% from last period</p>
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up h-4 w-4 text-muted-foreground"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
+        <p class="label">Rendimiento 24h</p>
+        <p class="value positive">+ ${{ summary.dailyPerformance?.toLocaleString() || "0.00" }}</p>
+        <p class="change positive">+{{ summary.dailyChange || 0 }}% respecto al período anterior</p>
       </div>
+
       <div class="card">
-        <p class="label">Total P/L</p>
-        <p class="value">$5,890.12</p>
-        <p class="change positive">+9.6% from last period</p>
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-wallet h-4 w-4 text-muted-foreground"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"></path><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"></path></svg>
+        <p class="label">Ganancia / Pérdida total</p>
+        <p class="value">${{ summary.totalPL?.toLocaleString() || "0.00" }}</p>
+        <p class="change positive">+{{ summary.profitPercent || 0 }}% respecto al período anterior</p>
       </div>
+
       <div class="card">
-        <p class="label">Worst Performer (24h)</p>
-        <p class="value">Ethereum</p>
-        <p class="change negative">-0.5% from last period</p>
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-down h-4 w-4 text-muted-foreground"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"></polyline><polyline points="16 17 22 17 22 11"></polyline></svg>
+        <p class="label">Peor Cripto (24h)</p>
+        <p class="value">{{ summary.worstPerformer || "-" }}</p>
+        <p class="change negative">{{ summary.worstPerformerChange || 0 }}% desde el último período</p>
       </div>
     </div>
 
-    <!-- Main Content -->
+    <!-- Contenido principal -->
     <div class="main">
-      <!-- Recent Transactions -->
+      <!-- Transacciones recientes -->
       <div class="transactions">
         <div class="transactions-header">
           <div>
-            <h2>Recent Transactions</h2>
-            <p class="subtitle">The last 5 transactions across all clients.</p>
+            <h2>Transacciones recientes</h2>
+            <p class="subtitle">Últimas 5 transacciones de todos los clientes.</p>
           </div>
-          <button class="view-all">View All</button>
+          <router-link to="/historial" class="view-all">Ver todas</router-link>
         </div>
+
         <table>
           <thead>
             <tr>
-              <th>Client</th>
-              <th>Type</th>
-              <th>Amount</th>
-              <th>Value (USD)</th>
+              <th>Cliente</th>
+              <th>Tipo</th>
+              <th>Monto</th>
+              <th>Valor (USD)</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
+            <tr v-for="tx in recentTransactions" :key="tx.id">
               <td>
-                <p class="client-name">Pedro Gonzales</p>
-                <p class="client-email">pedrogonzales@mail.com</p>
+                <p class="client-name">{{ tx.clientName }}</p>
+                <p class="client-email">{{ tx.clientEmail }}</p>
               </td>
-              <td><span class="tag purchase">Purchase</span></td>
-              <td>0.5 BTC</td>
-              <td>$30,000</td>
-            </tr>
-            <tr>
-              <td>
-                <p class="client-name">Agustin Ruatta</p>
-                <p class="client-email">agustinruatta@gmail.com</p>
-              </td>
-              <td><span class="tag purchase">Purchase</span></td>
-              <td>2 ETH</td>
-              <td>$4,000</td>
-            </tr>
-            <tr>
-              <td>
-                <p class="client-name">Pedro Gonzales</p>
-                <p class="client-email">pedrogonzales@mail.com</p>
-              </td>
-              <td><span class="tag purchase">Purchase</span></td>
-              <td>1000 USDC</td>
-              <td>$1,000</td>
+              <td><span class="tag purchase">{{ tx.type }}</span></td>
+              <td>{{ tx.amount }} {{ tx.crypto }}</td>
+              <td>${{ tx.valueUsd?.toLocaleString() || "0.00" }}</td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <!-- Portfolio Composition -->
-      <div class="portfolio">
-        <h2>Portfolio Composition</h2>
-        <p class="subtitle">Distribution of assets by current value.</p>
-        <div class="donut"></div>
-      </div>
+      <!-- 📊 Gráfico con precio actual -->
+<div class="chart-card">
+  <div class="chart-header">
+    <div class="price-header">
+      <h3>Evolución de precios</h3>
+      <p class="current-price" v-if="currentPrice">
+        Precio actual {{ selectedCrypto.toUpperCase() }}:
+        <span>${{ currentPrice.toLocaleString() }}</span>
+      </p>
+    </div>
+
+    <!-- 🔥 BOTONES EN VEZ DE SELECT -->
+    <div class="crypto-buttons">
+      <button
+        v-for="c in ['btc', 'eth', 'usdc']"
+        :key="c"
+        :class="['crypto-btn', { active: selectedCrypto === c }]"
+        @click="selectedCrypto = c; fetchData();"
+      >
+        {{ c.toUpperCase() }}
+      </button>
+    </div>
+  </div>
+
+  <Line v-if="chartData" :data="chartData" :options="chartOptions" />
+</div>
     </div>
   </div>
 </template>
 
-<script>
-export default {
-  name: "Dashboard",
+<script setup>
+import { ref, onMounted } from "vue";
+import axios from "axios";
+import { Line } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  Title, Tooltip, Legend,
+  LineElement, CategoryScale, LinearScale, PointElement
+} from 'chart.js'
+import { eventBus } from "@/eventBus";
+
+ChartJS.register(Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement)
+
+const selectedCrypto = ref('btc')
+const chartData = ref(null)
+const currentPrice = ref(null)
+
+const chartOptions = {
+  responsive: true,
+  plugins: {
+    legend: { display: true, position: 'bottom' },
+    tooltip: { enabled: true }
+  },
+  scales: {
+    y: {
+      ticks: { color: '#4F46E5' },
+      grid: { color: 'rgba(0,0,0,0.05)' }
+    },
+    x: {
+      ticks: { color: '#4B5563' },
+      grid: { display: false }
+    }
+  }
+}
+
+const fetchData = async () => {
+  try {
+    const { data } = await axios.get(
+      `http://localhost:5272/api/Transactions/precio/historial/${selectedCrypto.value}`
+    );
+
+    currentPrice.value = data[data.length - 1]?.precio || null;
+
+    // 📉 MEDIA MÓVIL (SMA 5)
+    const sma = data.map((d, i, arr) =>
+      i < 4 ? null : arr.slice(i - 4, i + 1).reduce((a, b) => a + b.precio, 0) / 5
+    );
+
+    chartData.value = {
+      labels: data.map(item =>
+        new Date(item.fecha).toLocaleDateString("es-ES", { day: "2-digit", month: "short" })
+      ),
+      datasets: [
+        {
+          label: `${selectedCrypto.value.toUpperCase()} - Precio real`,
+          data: data.map(item => item.precio),
+          borderColor: "#2563eb",
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.35,
+          fill: true,
+          backgroundColor: (ctx) => {
+            const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 400);
+            g.addColorStop(0, "rgba(37,99,235,0.4)");
+            g.addColorStop(1, "rgba(37,99,235,0)");
+            return g;
+          }
+        },
+        {
+          label: "Media móvil (SMA 5)",
+          data: sma,
+          borderColor: "#9333ea",
+          borderWidth: 2,
+          pointRadius: 0,
+          borderDash: [5, 5]
+        }
+      ]
+    };
+  } catch (error) {
+    console.error("Error al cargar datos del gráfico:", error);
+  }
 };
+
+onMounted(fetchData)
+
+
+// ------------------------------
+// 📊 Estado del dashboard
+// ------------------------------
+const summary = ref({
+  totalPortfolioValue: 0,
+  changePercent: 0,
+  dailyPerformance: 0,
+  dailyChange: 0,
+  totalPL: 0,
+  profitPercent: 0,
+  worstPerformer: "-",
+  worstPerformerChange: 0,
+});
+
+const recentTransactions = ref([]);
+
+
+// ------------------------------
+// 🔄 FUNCIÓN CENTRAL QUE RECARGA TODO EL DASHBOARD
+// ------------------------------
+async function cargarDashboard() {
+  try {
+    const summaryRes = await axios.get("http://localhost:5272/api/Dashboard/summary");
+    const transactionsRes = await axios.get("http://localhost:5272/api/Transactions/recent");
+
+    summary.value = summaryRes.data;
+    recentTransactions.value = transactionsRes.data;
+
+    await actualizarPrecios();
+  } catch (error) {
+    console.error("Error al cargar datos del dashboard:", error);
+  }
+}
+
+
+// ------------------------------
+// 🎯 AL INICIAR, LO CARGA
+// ------------------------------
+onMounted(() => {
+  cargarDashboard();
+});
+
+
+// ------------------------------
+// 🟢 ESCUCHAR EVENTO PARA ACTUALIZAR DASHBOARD EN TIEMPO REAL
+// ------------------------------
+eventBus.on("transaccion-creada", async () => {
+  console.log("Recibido evento de nueva transacción → refrescando dashboard...");
+  await cargarDashboard();   // 🔥 Recarga todo automáticamente
+});
+
+
+// ------------------------------
+// 💰 Obtener precios desde backend
+// ------------------------------
+async function actualizarPrecios() {
+  try {
+    const [btc, eth] = await Promise.all([
+      axios.get("http://localhost:5272/api/Transactions/precio/btc"),
+      axios.get("http://localhost:5272/api/Transactions/precio/eth"),
+    ]);
+
+    // Si querés, podés usarlos.
+    // No los toco porque tu UI actual no los usa directamente.
+  } catch (error) {
+    console.warn("No se pudieron actualizar los precios:", error);
+  }
+}
 </script>
+
 
 <style scoped>
 .dashboard {
@@ -184,6 +337,7 @@ export default {
 }
 
 .view-all {
+  text-decoration: none;
   background: #6d28d9;
   color: white;
   padding: 4px 12px;
@@ -236,14 +390,82 @@ tr {
   text-align: center;
 }
 
-.donut {
-  width: 180px;
-  height: 180px;
-  border-radius: 50%;
-  border: 30px solid black;
-  border-top-color: transparent;
-  margin: 20px auto 0;
+.chart-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  padding: 20px;
+  height: 400px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+select {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: 0.2s;
+}
+select:hover {
+  border-color: #4F46E5;
+}
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr;
+  gap: 24px;
+  margin-top: 20px;
 }
 
+.price-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.current-price {
+  font-size: 1rem;
+  color: #333;
+  font-weight: 500;
+}
+
+.current-price span {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+
+.crypto-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.crypto-btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  cursor: pointer;
+  font-weight: 500;
+  transition: 0.2s;
+}
+
+.crypto-btn:hover {
+  background: #f3f4f6;
+}
+
+.crypto-btn.active {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
 
 </style>
