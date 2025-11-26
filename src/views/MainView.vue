@@ -22,7 +22,7 @@ import Header from '../components/Header.vue'
   min-height: 100vh;
 }
 
-/* --- SIDEBAR FIJO --- */
+/* para q el sidebar quede fijo siempre+ */
 .layout {
   display: flex;
   min-height: 100vh;

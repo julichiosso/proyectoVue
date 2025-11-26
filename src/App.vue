@@ -17,7 +17,6 @@ body {
   font-family: 'Segoe UI', sans-serif;
 }
 
-/* Fondo azul sólo para el área de contenido (no sidebar) */
 .main-content {
   background: linear-gradient(135deg, #0a0f1c, #1e3c72);
 }

@@ -11,21 +11,22 @@
           <h2>Todas las transacciones</h2>
           <p>Un registro completo de todas las operaciones.</p>
         </div>
+
         <div class="actions">
           <select v-model="clienteSeleccionado" @change="obtenerMovimientos">
             <option value="">Filtrar por cliente...</option>
             <option
-            v-for="cliente in clientesUnicos"
-            :key="cliente.id"
-            :value="cliente.id"
+              v-for="cliente in clientesUnicos"
+              :key="cliente.id"
+              :value="cliente.id"
             >
               {{ cliente.nombre }}
             </option>
-
           </select>
 
-          <!-- Botón de nueva compra -->
-          <router-link to="/lista-de-tareas" class="new-trade">+ Nueva Compra</router-link>
+          <router-link to="/lista-de-tareas" class="new-trade"
+            >+ Nueva Compra</router-link
+          >
         </div>
       </div>
 
@@ -44,18 +45,29 @@
         <tbody>
           <tr v-for="(tx, index) in movimientos" :key="tx.id">
             <td>{{ getClientName(tx.clientId) }}</td>
+
             <td>
-              <span class="tag" :class="{ 'tag-sell': tx.accion === 'Venta' }">
+              <span
+                class="tag"
+                :class="{ 'tag-sell': tx.accion === 'Venta' }"
+              >
                 {{ tx.accion === 'Venta' ? 'Venta' : 'Compra' }}
               </span>
             </td>
+
             <td>{{ getCryptoIcon(tx.cryptoCode) }} {{ getCryptoName(tx.cryptoCode) }}</td>
             <td>{{ tx.cantidad }} {{ tx.cryptoCode }}</td>
             <td class="value">${{ formatUSD(tx.montoARS) }}</td>
             <td>{{ formatDate(tx.fechaHora) }}</td>
+
             <td class="menu-cell">
               <button class="menu-btn" @click.stop="toggleMenu(index)">⋯</button>
-              <div v-if="activeMenu === index" class="dropdown" @click.stop>
+
+              <div
+                v-if="activeMenu === index"
+                class="dropdown"
+                @click.stop
+              >
                 <p class="dropdown-title">Acciones</p>
                 <p @click.stop="viewAction(tx)">Ver</p>
                 <p @click.stop="editAction(tx)">Editar</p>
@@ -66,15 +78,12 @@
         </tbody>
       </table>
 
-      <!-- ===== MODAL OVERLAY ===== -->
       <div v-if="modal.visible" class="modal-overlay" @click="closeModal"></div>
 
-      <!-- ===== MODAL CARD ===== -->
       <div v-if="modal.visible" class="modal-card">
         <h3 class="modal-title">{{ modal.title }}</h3>
 
         <div class="modal-body">
-          <!-- Ver -->
           <div v-if="modal.type === 'view'">
             <p><strong>Cliente:</strong> {{ getClientName(modal.tx.clientId) }}</p>
             <p><strong>Tipo:</strong> {{ modal.tx.accion }}</p>
@@ -84,7 +93,6 @@
             <p><strong>Fecha:</strong> {{ formatDate(modal.tx.fechaHora) }}</p>
           </div>
 
-          <!-- Edit -->
           <div v-if="modal.type === 'edit'" class="edit-form">
             <label>Cripto</label>
             <select v-model="editData.cryptoCode" class="input">
@@ -94,20 +102,14 @@
             </select>
 
             <label>Cantidad</label>
-            <input v-model="editData.cantidad" type="number" step="0.0001" />
+            <input v-model="editData.cantidad" @input="recalcular" type="number" />
 
             <label>Valor (ARS)</label>
-            <input
-              type="text"
-              v-model="editData.valorARS"
-              class="input"
-              readonly
-            />
+            <input type="text" v-model="editData.valorARS" class="input" readonly />
 
             <button class="primary-btn" @click="guardarEdicion">Guardar Cambios</button>
           </div>
 
-          <!-- Delete -->
           <div v-if="modal.type === 'delete'">
             <p>¿Seguro que deseas eliminar esta transacción?</p>
             <button class="delete-btn" @click="confirmDelete(modal.tx)">Eliminar</button>
@@ -127,251 +129,263 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
-import axios from 'axios'
-// ---------- TOAST ----------
-const toast = ref({
-  visible: false,
-  message: ""
-})
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import axios from "axios";
 
+const toast = ref({ visible: false, message: "" });
 function showToast(msg) {
-  toast.value.message = msg
-  toast.value.visible = true
-  setTimeout(() => toast.value.visible = false, 2500)
+  toast.value.message = msg;
+  toast.value.visible = true;
+  setTimeout(() => (toast.value.visible = false), 2500);
 }
 
-
-// ---------- STATE ----------
-const clientes = ref([])
-const clienteSeleccionado = ref('')
-const movimientos = ref([])
-const activeMenu = ref(null)
+const clientes = ref([]);
+const clienteSeleccionado = ref("");
+const movimientos = ref([]);
+const activeMenu = ref(null);
 
 const modal = ref({
   visible: false,
   type: null,
-  title: '',
-  tx: null
-})
+  title: "",
+  tx: null,
+});
 
 const editData = ref({
   id: null,
-  cryptoCode: '',
+  cryptoCode: "",
   cantidad: 0,
-  valorARS: 0
-})
+  valorARS: 0,
+  precioActual: 0,
+});
 
-// ---------- MENU ----------
 function toggleMenu(index) {
-  activeMenu.value = activeMenu.value === index ? null : index
+  activeMenu.value = activeMenu.value === index ? null : index;
 }
 
 function handleClickOutside(event) {
-  const isMenuCell = event.target.closest('.menu-cell')
-  const isDropdown = event.target.closest('.dropdown')
-  if (isMenuCell || isDropdown) return
-  activeMenu.value = null
+  const isMenuCell = event.target.closest(".menu-cell");
+  const isDropdown = event.target.closest(".dropdown");
+  if (isMenuCell || isDropdown) return;
+  activeMenu.value = null;
 }
 
-// ---------- MODAL ACTIONS ----------
 function viewAction(tx) {
-  modal.value = { visible: true, type: 'view', title: 'Detalles de la Transacción', tx: { ...tx } }
-}
-
-function editAction(tx) {
   modal.value = {
     visible: true,
-    type: 'edit',
-    title: 'Editar Transacción',
-    tx
-  }
+    type: "view",
+    title: "Detalles de la Transacción",
+    tx: { ...tx },
+  };
+}
+
+async function editAction(tx) {
+  modal.value = {
+    visible: true,
+    type: "edit",
+    title: "Editar Transacción",
+    tx,
+  };
 
   editData.value = {
     id: tx.id,
     cryptoCode: tx.cryptoCode.toLowerCase(),
     cantidad: Number(tx.cantidad),
-    valorARS: Number(tx.montoARS)
+    valorARS: Number(tx.montoARS),
+    precioActual: 0,
+  };
+
+  const precio = await obtenerPrecioActual(editData.value.cryptoCode);
+  editData.value.precioActual = precio;
+  if (precio > 0) {
+    editData.value.valorARS = (precio * editData.value.cantidad).toFixed(2);
   }
+}
+
+function recalcular() {
+  editData.value.valorARS = (
+    Number(editData.value.precioActual) * Number(editData.value.cantidad)
+  ).toFixed(2);
 }
 
 function deleteAction(tx) {
   modal.value = {
     visible: true,
-    type: 'delete',
-    title: 'Eliminar transacción',
-    tx
-  }
+    type: "delete",
+    title: "Eliminar transacción",
+    tx,
+  };
 }
 
 function closeModal() {
-  modal.value.visible = false
-  activeMenu.value = null
+  modal.value.visible = false;
+  activeMenu.value = null;
 }
 
-// ---------- API HELPERS ----------
 const obtenerPrecioActual = async (cripto) => {
   try {
-    const resp = await axios.get(`http://localhost:5272/api/Transactions/precio/${cripto}`)
-    return resp.data
+    const resp = await axios.get(
+      `http://localhost:5272/api/Transactions/precio/${cripto}`
+    );
+    return resp.data;
   } catch {
-    return 0
+    return 0;
   }
-}
+};
 
-// ---------- ACTUALIZAR (PUT robusto: GET -> modify -> PUT) ----------
 async function guardarEdicion() {
   try {
-    const id = editData.value.id
+    const id = editData.value.id;
+    if (!id) return;
 
-    if (!id) return console.error("No hay id para editar")
+    const getResp = await axios.get(
+      `http://localhost:5272/api/Transactions/${id}`
+    );
+    const original = getResp.data;
+    if (!original) return;
 
-    // 1. Obtener la transacción original del backend
-    const getResp = await axios.get(`http://localhost:5272/api/Transactions/${id}`)
-    const original = getResp.data
+    let cryptoCode = (
+      editData.value.cryptoCode ||
+      original.cryptoCode ||
+      ""
+    )
+      .toString()
+      .toLowerCase();
 
-    // 2. Calcular monto nuevo
-    let precio = await obtenerPrecioActual(editData.value.cryptoCode)
-    let montoARSFinal = precio * Number(editData.value.cantidad)
+    let precio = 0;
+    try {
+      precio = await obtenerPrecioActual(cryptoCode);
 
-    // 3. Payload limpio SOLO con lo que el backend quiere
-    const payload = {
-      id: original.id,
-      clientId: original.clientId,
-      action: original.action, // buy | sell
-      cryptoCode: editData.value.cryptoCode.toUpperCase(),
-      cryptoAmount: Number(editData.value.cantidad),
-      montoARS: Number(montoARSFinal),
-      fechaHora: original.fechaHora
+      if (!precio || precio === 0) {
+        const map = {
+          btc: "bitcoin",
+          bitcoin: "btc",
+          eth: "ethereum",
+          ethereum: "eth",
+          usdc: "usdc",
+          "usd-coin": "usdc",
+        };
+        const try1 = map[cryptoCode] || cryptoCode;
+        if (try1 !== cryptoCode) {
+          precio = await obtenerPrecioActual(try1);
+          if (precio && precio > 0) cryptoCode = try1;
+        }
+      }
+    } catch {}
+
+    if (!precio || precio === 0) {
+      precio = original.montoARS / original.cryptoAmount;
     }
 
-    // 4. PUT al backend
-    await axios.put(`http://localhost:5272/api/Transactions/${id}`, payload)
+    const cantidad = Number(editData.value.cantidad ?? original.cryptoAmount ?? 0);
+    const montoARSCalculo = Number((precio * cantidad).toFixed(2));
 
-    // 5. Refrescar UI
-    modal.value.visible = false
-    await obtenerMovimientos()
+    const payload = {
+      id: original.id,
+      cryptoCode: cryptoCode,
+      action: original.action.toLowerCase(),
+      clientId: original.clientId,
+      cryptoAmount: cantidad,
+      montoARS: montoARSCalculo,
+      fechaHora: original.fechaHora,
+    };
 
-  } catch (err) {
-    console.error("Error guardando edición:", err)
-    console.log("Respuesta backend:", err?.response?.data)
+    await axios.put(`http://localhost:5272/api/Transactions/${id}`, payload);
+
+    modal.value.visible = false;
+    await obtenerMovimientos();
+    showToast("Transacción actualizada correctamente");
+  } catch {
+    showToast("Error actualizando");
   }
 }
 
-
-// ---------- ELIMINAR ----------
 async function confirmDelete(tx) {
   try {
-    await axios.delete(`http://localhost:5272/api/Transactions/${tx.id}`)
-    movimientos.value = movimientos.value.filter(m => m.id !== tx.id)
-    closeModal()
-    showToast("Transacción eliminada correctamente")
-  } catch (err) {
-    console.error("Error al borrar:", err)
-  }
+    await axios.delete(`http://localhost:5272/api/Transactions/${tx.id}`);
+    movimientos.value = movimientos.value.filter((m) => m.id !== tx.id);
+    closeModal();
+    showToast("Transacción eliminada correctamente");
+  } catch {}
 }
 
-
-
-// ---------- HELPERS ----------
 function getClientName(id) {
-  const c = clientes.value.find(cl => cl.id === id)
-  return c ? c.nombre : `Cliente ${id}`
+  const c = clientes.value.find((cl) => cl.id === id);
+  return c ? c.nombre : `Cliente ${id}`;
 }
 
-const cryptoNames = { btc:"Bitcoin", eth:"Ethereum", usdc:"USD Coin" }
+const cryptoNames = { btc: "Bitcoin", eth: "Ethereum", usdc: "USD Coin" };
 function getCryptoName(code) {
-  return cryptoNames[code?.toLowerCase()] || code
+  return cryptoNames[code?.toLowerCase()] || code;
 }
 
-const cryptoIcons = { btc:"₿", eth:"♦", usdc:"💲" }
+const cryptoIcons = { btc: "₿", eth: "♦", usdc: "💲" };
 function getCryptoIcon(code) {
-  return cryptoIcons[code?.toLowerCase()] || "•"
+  return cryptoIcons[code?.toLowerCase()] || "•";
 }
 
 function formatUSD(amount) {
-  return Number(amount).toLocaleString("en-US", { minimumFractionDigits: 2 })
+  return Number(amount).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+  });
 }
 
 function formatDate(dateString) {
-  if (!dateString) return "-"
-  return new Date(dateString).toLocaleDateString("es-AR")
+  if (!dateString) return "-";
+  return new Date(dateString).toLocaleDateString("es-AR");
 }
 
-// ---------- MAPEO API REAL ----------
-const mapTransaccion = mov => ({
+const mapTransaccion = (mov) => ({
   id: mov.id,
   clientId: mov.clientId,
   accion: mov.action === "buy" ? "Compra" : "Venta",
   cryptoCode: mov.cryptoCode,
   cantidad: Number(mov.cryptoAmount),
   montoARS: Number(mov.montoARS),
-  fechaHora: mov.fechaHora
-})
+  fechaHora: mov.fechaHora,
+});
 
-
-// ---------- API TRANSACCIONES ----------
 async function obtenerHistorial() {
   try {
-    const resp = await axios.get("http://localhost:5272/api/Transactions")
-    movimientos.value = resp.data.map(mapTransaccion)
-  } catch (err) {
-    console.error(err)
-  }
+    const resp = await axios.get("http://localhost:5272/api/Transactions");
+    movimientos.value = resp.data.map(mapTransaccion);
+  } catch {}
 }
 
 async function obtenerMovimientos() {
   try {
     const url = clienteSeleccionado.value
       ? `http://localhost:5272/api/Transactions/by-client/${clienteSeleccionado.value}`
-      : `http://localhost:5272/api/Transactions`
+      : `http://localhost:5272/api/Transactions`;
 
-    const resp = await axios.get(url)
-    movimientos.value = resp.data.map(mapTransaccion)
+    const resp = await axios.get(url);
+    movimientos.value = resp.data.map(mapTransaccion);
   } catch {
-    movimientos.value = []
+    movimientos.value = [];
   }
 }
 
-// ---------- WATCH ----------
-watch(() => editData.value.cantidad, async () => {
-  if (!editData.value.cryptoCode) return
-  const precio = await obtenerPrecioActual(editData.value.cryptoCode)
-  editData.value.valorARS = (precio * Number(editData.value.cantidad)).toFixed(2)
-})
-
-watch(() => editData.value.cryptoCode, async () => {
-  if (!editData.value.cantidad) return
-  const precio = await obtenerPrecioActual(editData.value.cryptoCode)
-  editData.value.valorARS = (precio * Number(editData.value.cantidad)).toFixed(2)
-})
-
-// ---------- MOUNT ----------
 onMounted(async () => {
-  document.addEventListener('click', handleClickOutside)
-
-  const resp = await axios.get("http://localhost:5272/api/Cliente")
-  clientes.value = resp.data
-
-  await obtenerHistorial()
-})
+  document.addEventListener("click", handleClickOutside);
+  const resp = await axios.get("http://localhost:5272/api/Cliente");
+  clientes.value = resp.data;
+  await obtenerHistorial();
+});
 
 onBeforeUnmount(() => {
-  document.removeEventListener('click', handleClickOutside)
-})
+  document.removeEventListener("click", handleClickOutside);
+});
 
-// clientes únicos
 const clientesUnicos = computed(() => {
-  const mapa = new Map()
+  const mapa = new Map();
   for (const c of clientes.value) {
-    if (!mapa.has(c.id)) mapa.set(c.id, c)
+    if (!mapa.has(c.id)) mapa.set(c.id, c);
   }
-  return [...mapa.values()]
-})
+  return [...mapa.values()];
+});
 </script>
 
 <style scoped>
-/* === Mantengo todos tus estilos originales === */
 .transaction-history {
   font-family: Arial, sans-serif;
   background: #f8f8f8;
@@ -386,7 +400,7 @@ const clientesUnicos = computed(() => {
 }
 
 .header p {
-  color: #71717A;
+  color: #71717a;
   margin-top: 4px;
 }
 
@@ -411,7 +425,7 @@ const clientesUnicos = computed(() => {
 
 .transactions-header p {
   margin: 0;
-  color: #71717A;  
+  color: #71717a;
 }
 
 .actions {
@@ -438,7 +452,7 @@ const clientesUnicos = computed(() => {
   text-decoration: none;
 }
 
-.new-trade:hover{
+.new-trade:hover {
   background: #5b21b6;
 }
 
@@ -456,7 +470,7 @@ const clientesUnicos = computed(() => {
 }
 
 .transactions-table td {
-  color: #71717A;
+  color: #71717a;
   padding: 12px 0;
   border-top: 1px solid #eee;
   font-size: 14px;
@@ -497,7 +511,7 @@ const clientesUnicos = computed(() => {
   background: white;
   border: 1px solid #ddd;
   border-radius: 6px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   width: 120px;
   z-index: 10;
 }
@@ -531,7 +545,7 @@ const clientesUnicos = computed(() => {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.25);
+  background: rgba(0, 0, 0, 0.25);
   backdrop-filter: blur(2px);
   z-index: 90;
 }
@@ -545,7 +559,7 @@ const clientesUnicos = computed(() => {
   border-radius: 10px;
   padding: 22px;
   width: 320px;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
   z-index: 100;
   animation: fadeIn 0.2s ease;
 }
@@ -589,6 +603,7 @@ const clientesUnicos = computed(() => {
   cursor: pointer;
   font-size: 14px;
 }
+
 .primary-btn:hover {
   background: #5b21b6;
 }
@@ -603,6 +618,7 @@ const clientesUnicos = computed(() => {
   cursor: pointer;
   font-size: 14px;
 }
+
 .delete-btn:hover {
   background: #b91c1c;
 }
@@ -618,8 +634,14 @@ const clientesUnicos = computed(() => {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translate(-50%, -48%); }
-  to { opacity: 1; transform: translate(-50%, -50%); }
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
 }
 
 .toast {
@@ -631,14 +653,20 @@ const clientesUnicos = computed(() => {
   padding: 12px 18px;
   border-radius: 8px;
   font-size: 14px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
   opacity: 0;
   animation: toastIn 0.3s ease forwards;
   z-index: 200;
 }
 
 @keyframes toastIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

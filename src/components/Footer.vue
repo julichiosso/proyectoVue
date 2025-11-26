@@ -33,7 +33,7 @@
 </template>
 
 <script setup>
-// Sin lógica por ahora, solo estructura y estilo
+
 </script>
 
 <style scoped>
@@ -114,7 +114,7 @@
   background-color: rgba(255, 255, 255, 0.2);
 }
 
-/* Responsive */
+/* para q sea responsive */
 @media (max-width: 700px) {
   .footer-container {
     flex-direction: column;

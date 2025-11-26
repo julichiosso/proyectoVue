@@ -13,11 +13,9 @@
         </div>
       </div>
 
-      <!-- LOADING y ERROR -->
       <p v-if="loading">Cargando clientes...</p>
       <p v-if="error" class="error">{{ error }}</p>
 
-      <!-- TABLA -->
       <table v-if="clients.length > 0" class="transactions-table">
         <thead>
           <tr>
@@ -34,7 +32,6 @@
             <td>{{ cl.nombre }}</td>
             <td>{{ cl.email }}</td>
 
-            <!-- MENÚ -->
             <td class="menu-cell">
               <button class="menu-btn" @click.stop="toggleMenu(index)">⋯</button>
 
@@ -51,23 +48,20 @@
 
       <p v-else>No hay clientes registrados.</p>
 
-      <!-- ===== MODAL OVERLAY ===== -->
+      
       <div v-if="modal.visible" class="modal-overlay" @click="closeModal"></div>
 
-      <!-- ===== MODAL CARD ===== -->
       <div v-if="modal.visible" class="modal-card">
         <h3 class="modal-title">{{ modal.title }}</h3>
 
         <div class="modal-body">
 
-          <!-- VER -->
           <div v-if="modal.type === 'view'">
             <p><strong>ID:</strong> {{ modal.data.id }}</p>
             <p><strong>Nombre:</strong> {{ modal.data.nombre }}</p>
             <p><strong>Email:</strong> {{ modal.data.email }}</p>
           </div>
 
-          <!-- EDITAR -->
           <div v-if="modal.type === 'edit'" class="edit-form">
             <label>Nombre</label>
             <input v-model="editData.nombre" />
@@ -78,7 +72,6 @@
             <button class="primary-btn" @click="guardarEdicion">Guardar Cambios</button>
           </div>
 
-          <!-- ELIMINAR -->
           <div v-if="modal.type === 'delete'">
             <p>¿Seguro que deseas eliminar al cliente <strong>{{ modal.data.nombre }}</strong>?</p>
             <button class="delete-btn" @click="confirmDelete">Eliminar</button>
@@ -89,7 +82,6 @@
         <button class="close-btn" @click="closeModal">Cerrar</button>
       </div>
 
-      <!-- TOAST -->
       <div v-if="toast.visible" class="toast">{{ toast.message }}</div>
     </div>
   </div>
@@ -99,7 +91,6 @@
 import { ref, onMounted, onBeforeUnmount } from "vue";
 import axios from "axios";
 
-/* ---------------- TOAST ---------------- */
 const toast = ref({ visible: false, message: "" });
 function showToast(msg) {
   toast.value.message = msg;
@@ -107,7 +98,6 @@ function showToast(msg) {
   setTimeout(() => (toast.value.visible = false), 2500);
 }
 
-/* ---------------- ESTADOS ---------------- */
 const clients = ref([]);
 const loading = ref(false);
 const error = ref("");
@@ -127,7 +117,7 @@ const editData = ref({
   email: "",
 });
 
-/* ---------------- MENU ---------------- */
+
 function toggleMenu(index) {
   activeMenu.value = activeMenu.value === index ? null : index;
 }
@@ -138,7 +128,6 @@ function handleClickOutside(event) {
   if (!cell && !drop) activeMenu.value = null;
 }
 
-/* ---------------- MODAL ---------------- */
 function closeModal() {
   modal.value.visible = false;
   activeMenu.value = null;
@@ -177,7 +166,6 @@ function openDelete(cl) {
   };
 }
 
-/* ---------------- EDITAR ---------------- */
 async function guardarEdicion() {
   try {
     await axios.put(`http://localhost:5272/api/Cliente/${editData.value.id}`, {
@@ -194,7 +182,6 @@ async function guardarEdicion() {
   }
 }
 
-/* ---------------- ELIMINAR ---------------- */
 async function confirmDelete() {
   try {
     await axios.delete(`http://localhost:5272/api/Cliente/${modal.value.data.id}`);
@@ -206,7 +193,6 @@ async function confirmDelete() {
   }
 }
 
-/* ---------------- CARGAR CLIENTES ---------------- */
 async function cargarClientes() {
   loading.value = true;
   try {
@@ -218,7 +204,6 @@ async function cargarClientes() {
   loading.value = false;
 }
 
-/* ---------------- MOUNT ---------------- */
 onMounted(async () => {
   document.addEventListener("click", handleClickOutside);
   await cargarClientes();
@@ -230,7 +215,6 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-/* Copiado exactamente desde historial.vue para misma estética */
 
 .transaction-history {
   font-family: Arial, sans-serif;
@@ -294,7 +278,7 @@ onBeforeUnmount(() => {
   font-size: 14px;
 }
 
-/* ---- MENÚ ---- */
+
 .menu-cell {
   position: relative;
 }
@@ -338,7 +322,7 @@ onBeforeUnmount(() => {
   color: red;
 }
 
-/* ---- MODAL ---- */
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -422,7 +406,6 @@ onBeforeUnmount(() => {
   cursor: pointer;
 }
 
-/* TOAST */
 .toast {
   position: fixed;
   bottom: 24px;

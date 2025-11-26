@@ -42,7 +42,7 @@
       <div class="user-section">
         <div class="user-avatar">J</div>
         <router-link :to="{ name: 'usuario' }" class="menu-item" active-class="active">
-        <span class="user-name" v-if="!collapsed">Julian C.</span>
+          <span class="user-name" v-if="!collapsed">Julian C.</span>
         </router-link>
       </div>
     </div>
@@ -66,20 +66,64 @@ const collapsed = ref(false)
   font-family: 'Inter', sans-serif;
   transition: width .25s ease-in-out;
 }
-.sidebar.collapsed { width: 80px; }
 
-/* Logo */
-.logo-section { display: flex; align-items: center; gap: 10px; padding: 24px; }
-.logo-icon { width: 28px; height: 28px; color: black; }
-.logo-text { color: #333; font-size: 18px; font-weight: 600; white-space: nowrap; }
+.sidebar.collapsed { 
+  width: 80px; 
+}
 
-/* Menu */
-.menu { display: flex; flex-direction: column; gap: 4px; padding: 0 16px; }
-.menu-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; color: #333; text-decoration: none; font-size: 15px; transition: background-color 0.2s; white-space: nowrap; overflow: hidden; }
-.menu-item:hover { background-color: #e9ecef; }
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 24px;
+}
 
-/* Bottom user + toggle */
-.bottom-area { display: flex; flex-direction: column; gap: 12px; padding: 16px; border-top: 1px solid #e0e0e0; }
+.logo-icon {
+  width: 28px;
+  height: 28px;
+  color: black;
+}
+
+.logo-text {
+  color: #333;
+  font-size: 18px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 16px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: #333;
+  text-decoration: none;
+  font-size: 15px;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.menu-item:hover {
+  background-color: #e9ecef;
+}
+
+.bottom-area {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-top: 1px solid #e0e0e0;
+}
+
 .toggle-btn {
   background: none;
   border: none;
@@ -91,15 +135,42 @@ const collapsed = ref(false)
   text-align: center;
   transition: 0.3s;
 }
-.toggle-btn:hover { transform: scale(1.15); }
 
-.user-section { display: flex; align-items: center; gap: 12px; }
-.user-avatar { width: 32px; height: 32px; background-color: #1d1d1d; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; color: white; transition: transform .4s ease; }
-.user-avatar:hover { transform: rotate(360deg) scale(1.1); }
-.user-name { font-size: 14px; color: #333; white-space: nowrap; }
+.toggle-btn:hover {
+  transform: scale(1.15);
+}
+
+.user-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  background-color: #1d1d1d;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: white;
+  transition: transform .4s ease;
+}
+
+.user-avatar:hover {
+  transform: rotate(360deg) scale(1.1);
+}
+
+.user-name {
+  font-size: 14px;
+  color: #333;
+  white-space: nowrap;
+}
+
 .sidebar.collapsed .user-section {
   justify-content: center;
   gap: 0;
 }
-
 </style>

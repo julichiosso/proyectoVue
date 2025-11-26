@@ -1,9 +1,7 @@
 <template>
   <div class="dashboard">
-    <!-- Header -->
     <h1 class="title">Panel Principal</h1>
 
-    <!-- Tarjetas de estadísticas -->
     <div class="cards">
       <div class="card">
         <p class="label">Valor total de la cartera</p>
@@ -30,9 +28,7 @@
       </div>
     </div>
 
-    <!-- Contenido principal -->
     <div class="main">
-      <!-- Transacciones recientes -->
       <div class="transactions">
         <div class="transactions-header">
           <div>
@@ -65,32 +61,30 @@
         </table>
       </div>
 
-      <!-- 📊 Gráfico con precio actual -->
-<div class="chart-card">
-  <div class="chart-header">
-    <div class="price-header">
-      <h3>Evolución de precios</h3>
-      <p class="current-price" v-if="currentPrice">
-        Precio actual {{ selectedCrypto.toUpperCase() }}:
-        <span>${{ currentPrice.toLocaleString() }}</span>
-      </p>
-    </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="price-header">
+            <h3>Evolución de precios</h3>
+            <p class="current-price" v-if="currentPrice">
+              Precio actual (USD) {{ selectedCrypto.toUpperCase() }}:
+              <span>${{ currentPrice.toLocaleString() }}</span>
+            </p>
+          </div>
 
-    <!-- 🔥 BOTONES EN VEZ DE SELECT -->
-    <div class="crypto-buttons">
-      <button
-        v-for="c in ['btc', 'eth', 'usdc']"
-        :key="c"
-        :class="['crypto-btn', { active: selectedCrypto === c }]"
-        @click="selectedCrypto = c; fetchData();"
-      >
-        {{ c.toUpperCase() }}
-      </button>
-    </div>
-  </div>
+          <div class="crypto-buttons">
+            <button
+              v-for="c in ['btc', 'eth', 'usdc']"
+              :key="c"
+              :class="['crypto-btn', { active: selectedCrypto === c }]"
+              @click="selectedCrypto = c; fetchData();"
+            >
+              {{ c.toUpperCase() }}
+            </button>
+          </div>
+        </div>
 
-  <Line v-if="chartData" :data="chartData" :options="chartOptions" />
-</div>
+        <Line v-if="chartData" :data="chartData" :options="chartOptions" />
+      </div>
     </div>
   </div>
 </template>
@@ -98,37 +92,44 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import axios from "axios";
-import { Line } from 'vue-chartjs'
+import { Line } from "vue-chartjs";
 import {
   Chart as ChartJS,
-  Title, Tooltip, Legend,
-  LineElement, CategoryScale, LinearScale, PointElement
-} from 'chart.js'
+  Title,
+  Tooltip,
+  Legend,
+  LineElement,
+  CategoryScale,
+  LinearScale,
+  PointElement
+} from "chart.js";
+import { Filler } from "chart.js";
 import { eventBus } from "@/eventBus";
 
-ChartJS.register(Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement)
+ChartJS.register(Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement);
+ChartJS.register(Filler);
 
-const selectedCrypto = ref('btc')
-const chartData = ref(null)
-const currentPrice = ref(null)
+const selectedCrypto = ref("btc");
+const chartData = ref(null);
+const currentPrice = ref(null);
 
 const chartOptions = {
   responsive: true,
   plugins: {
-    legend: { display: true, position: 'bottom' },
+    legend: { display: true, position: "bottom" },
     tooltip: { enabled: true }
   },
   scales: {
     y: {
-      ticks: { color: '#4F46E5' },
-      grid: { color: 'rgba(0,0,0,0.05)' }
+      ticks: { color: "#4F46E5" },
+      grid: { color: "rgba(0,0,0,0.05)" }
     },
     x: {
-      ticks: { color: '#4B5563' },
+      ticks: { color: "#4B5563" },
       grid: { display: false }
     }
   }
-}
+};
 
 const fetchData = async () => {
   try {
@@ -138,7 +139,6 @@ const fetchData = async () => {
 
     currentPrice.value = data[data.length - 1]?.precio || null;
 
-    // 📉 MEDIA MÓVIL (SMA 5)
     const sma = data.map((d, i, arr) =>
       i < 4 ? null : arr.slice(i - 4, i + 1).reduce((a, b) => a + b.precio, 0) / 5
     );
@@ -156,7 +156,7 @@ const fetchData = async () => {
           pointRadius: 0,
           tension: 0.35,
           fill: true,
-          backgroundColor: (ctx) => {
+          backgroundColor: ctx => {
             const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 400);
             g.addColorStop(0, "rgba(37,99,235,0.4)");
             g.addColorStop(1, "rgba(37,99,235,0)");
@@ -178,12 +178,8 @@ const fetchData = async () => {
   }
 };
 
-onMounted(fetchData)
+onMounted(fetchData);
 
-
-// ------------------------------
-// 📊 Estado del dashboard
-// ------------------------------
 const summary = ref({
   totalPortfolioValue: 0,
   changePercent: 0,
@@ -192,15 +188,11 @@ const summary = ref({
   totalPL: 0,
   profitPercent: 0,
   worstPerformer: "-",
-  worstPerformerChange: 0,
+  worstPerformerChange: 0
 });
 
 const recentTransactions = ref([]);
 
-
-// ------------------------------
-// 🔄 FUNCIÓN CENTRAL QUE RECARGA TODO EL DASHBOARD
-// ------------------------------
 async function cargarDashboard() {
   try {
     const summaryRes = await axios.get("http://localhost:5272/api/Dashboard/summary");
@@ -215,42 +207,25 @@ async function cargarDashboard() {
   }
 }
 
-
-// ------------------------------
-// 🎯 AL INICIAR, LO CARGA
-// ------------------------------
 onMounted(() => {
   cargarDashboard();
 });
 
-
-// ------------------------------
-// 🟢 ESCUCHAR EVENTO PARA ACTUALIZAR DASHBOARD EN TIEMPO REAL
-// ------------------------------
 eventBus.on("transaccion-creada", async () => {
-  console.log("Recibido evento de nueva transacción → refrescando dashboard...");
-  await cargarDashboard();   // 🔥 Recarga todo automáticamente
+  await cargarDashboard();
 });
 
-
-// ------------------------------
-// 💰 Obtener precios desde backend
-// ------------------------------
 async function actualizarPrecios() {
   try {
-    const [btc, eth] = await Promise.all([
+    await Promise.all([
       axios.get("http://localhost:5272/api/Transactions/precio/btc"),
-      axios.get("http://localhost:5272/api/Transactions/precio/eth"),
+      axios.get("http://localhost:5272/api/Transactions/precio/eth")
     ]);
-
-    // Si querés, podés usarlos.
-    // No los toco porque tu UI actual no los usa directamente.
   } catch (error) {
     console.warn("No se pudieron actualizar los precios:", error);
   }
 }
 </script>
-
 
 <style scoped>
 .dashboard {
@@ -276,7 +251,6 @@ async function actualizarPrecios() {
 }
 
 .card {
-  
   background: white;
   padding: 16px;
   border-radius: 8px;
@@ -284,7 +258,6 @@ async function actualizarPrecios() {
 }
 
 .label {
-  
   font-size: 14px;
   color: #030711;
 }
@@ -317,7 +290,8 @@ async function actualizarPrecios() {
   gap: 24px;
 }
 
-.transactions, .portfolio {
+.transactions,
+.portfolio {
   background: white;
   border-radius: 8px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
@@ -356,7 +330,8 @@ thead {
   color: #6b7280;
 }
 
-th, td {
+th,
+td {
   padding: 8px 0;
   text-align: left;
 }
@@ -400,12 +375,14 @@ tr {
   flex-direction: column;
   justify-content: space-between;
 }
+
 .chart-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
 }
+
 select {
   background: #f9fafb;
   border: 1px solid #e5e7eb;
@@ -415,9 +392,11 @@ select {
   cursor: pointer;
   transition: 0.2s;
 }
+
 select:hover {
   border-color: #4F46E5;
 }
+
 .dashboard-grid {
   display: grid;
   grid-template-columns: 2fr 1.5fr;
@@ -441,7 +420,6 @@ select:hover {
   color: #16a34a;
   font-weight: 600;
 }
-
 
 .crypto-buttons {
   display: flex;
@@ -467,5 +445,4 @@ select:hover {
   color: white;
   border-color: #2563eb;
 }
-
 </style>
